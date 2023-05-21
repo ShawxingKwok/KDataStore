@@ -48,8 +48,11 @@ dependencies {
     api "org.jetbrains.kotlin:kotlin-reflect:$kt_version"
     api "androidx.datastore:datastore-preferences:1.0.0"
     api 'io.github.apollokwok:kt-util:1.0.6'
+    api 'io.github.apollokwok:android-util:1.0.0-SNAPSHOT'
     api "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
     api "androidx.startup:startup-runtime:1.1.1"
+    api 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
+    api 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4'
 }
 
 tasks.withType(KotlinCompile).configureEach{
@@ -58,7 +61,7 @@ tasks.withType(KotlinCompile).configureEach{
 
 // publish
 mavenPublishing {
-    coordinates("io.github.apollokwok", "prefstore", "1.0.0-SNAPSHOT")
+    coordinates("io.github.apollokwok", "android-prefstore", "1.0.0-SNAPSHOT")
 //    coordinates("io.github.apollokwok", "prefstore", "1.0.0")
     pom {
         name = "Pref store"

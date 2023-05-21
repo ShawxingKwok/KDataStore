@@ -57,6 +57,7 @@ tasks.withType(KotlinCompile).configureEach{
 dependencies {
     implementation "androidx.datastore:datastore-preferences:1.0.0"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
+    implementation 'io.github.apollokwok:android-util-view:1.0.0-SNAPSHOT'
     implementation 'io.github.apollokwok:kt-util:1.0.6'
     implementation project(":core")
 //    implementation project('io.github.apollokwok:prefstore:1.0.0')

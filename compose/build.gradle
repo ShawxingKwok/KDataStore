@@ -55,7 +55,7 @@ tasks.withType(KotlinCompile).configureEach{
 
 // publish
 mavenPublishing {
-    coordinates("io.github.apollokwok", "prefstore-compose", "1.0.0-SNAPSHOT")
+    coordinates("io.github.apollokwok", "android-prefstore-compose", "1.0.0-SNAPSHOT")
 
     pom {
         name = "Compose extension from PrefStore"

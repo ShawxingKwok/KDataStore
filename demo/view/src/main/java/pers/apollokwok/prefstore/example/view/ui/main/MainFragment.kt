@@ -8,8 +8,8 @@ import android.view.ViewGroup
 import android.widget.PopupMenu
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
+import pers.apollokwok.android.view.collectOnResume
 import pers.apollokwok.prefstore.example.view.R
-import pers.apollokwok.prefstore.example.view.collectOnResume
 import pers.apollokwok.prefstore.example.view.data.ds.Language
 import pers.apollokwok.prefstore.example.view.data.ds.Settings
 import pers.apollokwok.prefstore.example.view.databinding.FragmentMainBinding
