@@ -1,0 +1,68 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlinx-serialization'
+    id "com.vanniktech.maven.publish"
+}
+
+android {
+    namespace 'pers.apollokwok.prefstore'
+    compileSdk 33
+
+    defaultConfig {
+        minSdk 21
+        targetSdk 33
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+// test
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}
+
+// config
+dependencies {
+    api 'androidx.core:core-ktx:1.10.1'
+    //noinspection GradleDependency
+    api "org.jetbrains.kotlin:kotlin-reflect:$kt_version"
+    api "androidx.datastore:datastore-preferences:1.0.0"
+    api 'io.github.apollokwok:kt-util:1.0.6'
+    api "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
+    api "androidx.startup:startup-runtime:1.1.1"
+}
+
+tasks.withType(KotlinCompile).configureEach{
+    kotlinOptions.freeCompilerArgs += "-Xexplicit-api=warning"
+}
+
+// publish
+mavenPublishing {
+    coordinates("io.github.apollokwok", "prefstore", "1.0.0-SNAPSHOT")
+//    coordinates("io.github.apollokwok", "prefstore", "1.0.0")
+    pom {
+        name = "Pref store"
+        description = "A data store extension with little configuration, easy encrytation and extensive supported types."
+        inceptionYear = "2023"
+    }
+}
