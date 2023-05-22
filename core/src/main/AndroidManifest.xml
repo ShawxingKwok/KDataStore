@@ -9,7 +9,7 @@
             android:exported="false"
             tools:node="merge" >
             <meta-data
-                android:name="pers.apollokwok.prefstore.MyInitializer"
+                android:name="pers.apollokwok.preferencestore.MyInitializer"
                 android:value="androidx.startup" />
         </provider>
     </application>

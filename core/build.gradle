@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace 'pers.apollokwok.prefstore'
+    namespace 'pers.apollokwok.preferencestore'
     compileSdk 33
 
     defaultConfig {
@@ -42,6 +42,7 @@ dependencies {
 }
 
 // config
+// TODO: simplify
 dependencies {
     api 'androidx.core:core-ktx:1.10.1'
     //noinspection GradleDependency
@@ -49,10 +50,14 @@ dependencies {
     api "androidx.datastore:datastore-preferences:1.0.0"
     api 'io.github.apollokwok:kt-util:1.0.6'
     api 'io.github.apollokwok:android-util:1.0.0-SNAPSHOT'
-    api "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
     api "androidx.startup:startup-runtime:1.1.1"
     api 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
     api 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4'
+    api "com.google.crypto.tink:tink-android:1.6.1"
+
+    implementation "androidx.datastore:datastore-core:1.0.0"
+    api "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.5.0"
 }
 
 tasks.withType(KotlinCompile).configureEach{
@@ -61,10 +66,10 @@ tasks.withType(KotlinCompile).configureEach{
 
 // publish
 mavenPublishing {
-    coordinates("io.github.apollokwok", "android-prefstore", "1.0.0-SNAPSHOT")
-//    coordinates("io.github.apollokwok", "prefstore", "1.0.0")
+    coordinates("io.github.apollokwok", "android-preferencestore", "1.0.0-SNAPSHOT")
+//    coordinates("io.github.apollokwok", "preferencestore", "1.0.0")
     pom {
-        name = "Pref store"
+        name = "Preference store"
         description = "A data store extension with little configuration, easy encrytation and extensive supported types."
         inceptionYear = "2023"
     }

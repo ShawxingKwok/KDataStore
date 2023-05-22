@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace 'pers.apollokwok.prefstore.compose'
+    namespace 'pers.apollokwok.preferencestore.compose'
     compileSdk 33
 
     defaultConfig {
@@ -55,11 +55,11 @@ tasks.withType(KotlinCompile).configureEach{
 
 // publish
 mavenPublishing {
-    coordinates("io.github.apollokwok", "android-prefstore-compose", "1.0.0-SNAPSHOT")
+    coordinates("io.github.apollokwok", "android-preferencestore-compose", "1.0.0-SNAPSHOT")
 
     pom {
-        name = "Compose extension from PrefStore"
-        description = "Add a extensional function `PrefStore.Flow<T>.collectAsDefaultState`"
+        name = "Compose extension from PreferenceStore"
+        description = "Add a extensional function `PreferenceStore.Flow<T>.collectAsDefaultState`"
         inceptionYear = "2023"
     }
 }

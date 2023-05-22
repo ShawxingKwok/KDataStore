@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace 'pers.apollokwok.prefstore.example.view'
+    namespace 'pers.apollokwok.preferencestore.example.view'
     compileSdk 33
 
     defaultConfig {
-        applicationId "pers.apollokwok.prefstore.example.view"
+        applicationId "pers.apollokwok.preferencestore.example.view"
         minSdk 24
         targetSdk 33
         versionCode 1
@@ -49,7 +49,7 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
 
-//region PrefStore
+//region PreferenceStore
 tasks.withType(KotlinCompile).configureEach{
     kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
 }
@@ -57,9 +57,10 @@ tasks.withType(KotlinCompile).configureEach{
 dependencies {
     implementation "androidx.datastore:datastore-preferences:1.0.0"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
+    implementation 'io.github.apollokwok:android-util:1.0.0-SNAPSHOT'
     implementation 'io.github.apollokwok:android-util-view:1.0.0-SNAPSHOT'
     implementation 'io.github.apollokwok:kt-util:1.0.6'
     implementation project(":core")
-//    implementation project('io.github.apollokwok:prefstore:1.0.0')
+//    implementation project('io.github.apollokwok:preferencestore:1.0.0')
 }
 //endregion
