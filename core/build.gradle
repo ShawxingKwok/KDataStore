@@ -53,7 +53,6 @@ dependencies {
     api "androidx.startup:startup-runtime:1.1.1"
     api 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
     api 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4'
-    api "com.google.crypto.tink:tink-android:1.6.1"
 
     implementation "androidx.datastore:datastore-core:1.0.0"
     api "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
