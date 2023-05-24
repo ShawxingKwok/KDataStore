@@ -41,22 +41,16 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
 
-// config
-// TODO: simplify
 dependencies {
-    api 'androidx.core:core-ktx:1.10.1'
+    implementation 'io.github.apollokwok:kt-util:1.0.6'
+    implementation 'io.github.apollokwok:android-util:1.0.0-SNAPSHOT'
+    implementation 'androidx.core:core-ktx:1.10.1'
     //noinspection GradleDependency
-    api "org.jetbrains.kotlin:kotlin-reflect:$kt_version"
-    api "androidx.datastore:datastore-preferences:1.0.0"
-    api 'io.github.apollokwok:kt-util:1.0.6'
-    api 'io.github.apollokwok:android-util:1.0.0-SNAPSHOT'
-    api "androidx.startup:startup-runtime:1.1.1"
-    api 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
-    api 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4'
+    implementation "org.jetbrains.kotlin:kotlin-reflect:$kt_version"
 
-    implementation "androidx.datastore:datastore-core:1.0.0"
-    api "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.5.0"
+    implementation "androidx.datastore:datastore-preferences:1.0.0"
+    implementation "androidx.startup:startup-runtime:1.1.1"
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
 }
 
 tasks.withType(KotlinCompile).configureEach{

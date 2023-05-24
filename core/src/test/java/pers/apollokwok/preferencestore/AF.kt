@@ -2,11 +2,21 @@ package pers.apollokwok.preferencestore
 
 import org.junit.Test
 
-class AFG : EFA() {
-    private var x = 1
+internal abstract class Super {
+    val x = bar()
+    abstract fun bar(): Int
+}
+
+internal class Sub : Super() {
+    val y = -1
 
     @Test
     fun foo() {
-        bar(::x)
+        println(x)
+    }
+
+    override fun bar(): Int{
+        println(y)
+        return 2
     }
 }
