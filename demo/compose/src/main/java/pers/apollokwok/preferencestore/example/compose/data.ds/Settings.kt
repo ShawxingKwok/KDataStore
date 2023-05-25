@@ -1,7 +1,5 @@
 package pers.apollokwok.preferencestore.example.compose.data.ds
 
-import android.content.Context
-import pers.apollokwok.preferencestore.Flow
 import pers.apollokwok.preferencestore.PreferenceStore
 import pers.apollokwok.preferencestore.Encryption
 
@@ -23,8 +21,4 @@ object Settings : PreferenceStore(
 ){
     val language: Flow<Language> by enum(Language.ENGLISH)
     val location by ktSerializable(Location(38.2, 55.3), true)
-
-    override fun onWholeCorrupt() {}
-
-    override fun getMigration(context: Context): Migration? = null
 }
