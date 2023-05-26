@@ -55,6 +55,8 @@ tasks.withType(KotlinCompile).configureEach{
 }
 
 dependencies {
+
+    implementation 'androidx.core:core-ktx:+'
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
     implementation 'io.github.apollokwok:kt-util:1.0.6'
     implementation 'io.github.apollokwok:android-util-view:1.0.0-SNAPSHOT'

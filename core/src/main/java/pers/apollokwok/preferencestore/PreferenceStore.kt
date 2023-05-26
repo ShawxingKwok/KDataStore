@@ -2,9 +2,9 @@ package pers.apollokwok.preferencestore
 
 import android.content.Context
 import android.util.Base64
-import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataMigration
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStoreFile
 import kotlinx.coroutines.*
@@ -15,7 +15,7 @@ import kotlinx.serialization.json.Json
 import pers.apollokwok.ktutil.KReadOnlyProperty
 import pers.apollokwok.ktutil.updateIf
 import java.io.*
-import kotlin.reflect.KProperty
+import kotlin.coroutines.suspendCoroutine
 import kotlin.reflect.full.functions
 
 public abstract class PreferenceStore private constructor(
@@ -122,7 +122,16 @@ public abstract class PreferenceStore private constructor(
     @PublishedApi
     internal val actualStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
-            corruptionHandler = null,
+            corruptionHandler = ReplaceFileCorruptionHandler {
+                //todo: remove 'runBlocking' after the official fix
+                runBlocking {
+                    val newPrefs = mutablePreferencesOf()
+                    updateAll(newPrefs) {
+                        corruptionHandlers.forEach { it() }
+                    }
+                    newPrefs
+                }
+            },
             migrations = listOf(defaultDataMigration, keysFixDataMigration),
             scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
             produceFile = {
@@ -135,23 +144,12 @@ public abstract class PreferenceStore private constructor(
     internal val caughtData: kotlinx.coroutines.flow.Flow<Preferences> =
         actualStore.data
         .catch {
-            when (it) {
-                is CorruptionException -> {
-                    val newPrefs = mutablePreferencesOf()
-                    updateAll(newPrefs) {
-                        corruptionHandlers.forEach { it() }
-                    }
-                    emit(newPrefs)
-                }
-
-                is IOException -> {
-                    it.printStackTrace()
-                    // TODO: optimize
-                    emit(emptyPreferences())
-                }
-
-                else -> throw it
+            if (it is IOException) {
+                it.printStackTrace()
+                // TODO: optimize
+                emit(emptyPreferences())
             }
+            else throw it
         }
 
     @PublishedApi
@@ -311,7 +309,7 @@ public abstract class PreferenceStore private constructor(
         onUpdate: suspend (Byte) -> Unit = {},
         onCorrupt: suspend () -> Byte = { default },
     )
-            : KReadOnlyProperty<PreferenceStore, Flow<Byte>> =
+    : KReadOnlyProperty<PreferenceStore, Flow<Byte>> =
         any(default, encrypted, onUpdate, onCorrupt, convert = Any::toString, recover = String::toByte)
 
     protected fun short(
@@ -320,7 +318,7 @@ public abstract class PreferenceStore private constructor(
         onUpdate: suspend (Short) -> Unit = {},
         onCorrupt: suspend () -> Short = { default },
     )
-            : KReadOnlyProperty<PreferenceStore, Flow<Short>> =
+    : KReadOnlyProperty<PreferenceStore, Flow<Short>> =
         any(default, encrypted, onUpdate, onCorrupt, convert = Any::toString, recover = String::toShort)
 
     protected fun char(
@@ -329,7 +327,7 @@ public abstract class PreferenceStore private constructor(
         onUpdate: suspend (Char) -> Unit = {},
         onCorrupt: suspend () -> Char = { default },
     )
-            : KReadOnlyProperty<PreferenceStore, Flow<Char>> =
+    : KReadOnlyProperty<PreferenceStore, Flow<Char>> =
         any(default, encrypted, onUpdate, onCorrupt, convert = Any::toString, recover = String::single)
 
     protected inline fun <reified T : Enum<T>> enum(
@@ -338,7 +336,7 @@ public abstract class PreferenceStore private constructor(
         noinline onUpdate: suspend (T) -> Unit = {},
         noinline onCorrupt: suspend () -> T = { default },
     )
-            : KReadOnlyProperty<PreferenceStore, Flow<T>> {
+    : KReadOnlyProperty<PreferenceStore, Flow<T>> {
         val function = default::class.functions.first { it.name == "valueOf" }
 
         return any(

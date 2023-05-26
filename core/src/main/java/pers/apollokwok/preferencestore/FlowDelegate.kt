@@ -72,7 +72,10 @@ internal inline fun <reified T : Any> FlowDelegate(
                         converted = convert(converted as T)
 
                     when (val prefs = thisRef.backupPrefs) {
-                        null -> thisRef.actualStore.edit { it[key] = converted }
+                        null ->
+                            // todo: handle its io exception
+                            thisRef.actualStore.edit { it[key] = converted }
+
                         else -> prefs[key] = converted
                     }
                 }
