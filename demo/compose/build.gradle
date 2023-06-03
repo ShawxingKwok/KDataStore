@@ -6,10 +6,10 @@ plugins {
 
 android {
     compileSdk 33
-    namespace 'pers.apollokwok.preferencestore.example.compose'
+    namespace 'pers.shawxingkwok.preferencestore.example.compose'
 
     defaultConfig {
-        applicationId 'pers.apollokwok.preferencestore.example.compose'
+        applicationId 'pers.shawxingkwok.preferencestore.example.compose'
         minSdk 24
         targetSdk 33
         versionCode 1
@@ -67,7 +67,7 @@ dependencies {
 // PreferenceStore
 dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
-    implementation 'io.github.apollokwok:kt-util:1.0.6'
     implementation project(":compose")
-//    implementation 'io.github.apollokwok:preferencestore-compose:1.0.0'
+    implementation 'io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT'
+//    implementation 'io.github.shawxingkwok:preferencestore-compose:1.0.0'
 }

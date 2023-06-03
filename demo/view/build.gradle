@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace 'pers.apollokwok.preferencestore.example.view'
+    namespace 'pers.shawxingkwok.preferencestore.example.view'
     compileSdk 33
 
     defaultConfig {
-        applicationId "pers.apollokwok.preferencestore.example.view"
+        applicationId "pers.shawxingkwok.preferencestore.example.view"
         minSdk 24
         targetSdk 33
         versionCode 1
@@ -56,11 +56,11 @@ tasks.withType(KotlinCompile).configureEach{
 
 dependencies {
 
-    implementation 'androidx.core:core-ktx:+'
+    implementation 'androidx.core:core-ktx:1.10.1'
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
-    implementation 'io.github.apollokwok:kt-util:1.0.6'
-    implementation 'io.github.apollokwok:android-util-view:1.0.0-SNAPSHOT'
+    implementation 'io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT'
+    implementation 'io.github.shawxingkwok:android-util-view:1.0.0-SNAPSHOT'
     implementation project(":core")
-//    implementation project('io.github.apollokwok:preferencestore:1.0.0')
+//    implementation project('io.github.shawxingkwok:preferencestore:1.0.0')
 }
 //endregion
