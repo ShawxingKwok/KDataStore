@@ -11,8 +11,8 @@
             <option value="$PROJECT_DIR$/compose" />
             <option value="$PROJECT_DIR$/core" />
             <option value="$PROJECT_DIR$/demo" />
+            <option value="$PROJECT_DIR$/demo/_view" />
             <option value="$PROJECT_DIR$/demo/compose" />
-            <option value="$PROJECT_DIR$/demo/view" />
           </set>
         </option>
       </GradleProjectSettings>

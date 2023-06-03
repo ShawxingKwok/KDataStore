@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace 'pers.shawxingkwok.preferencestore'
+    namespace 'pers.shawxingkwok.kdatastore'
     compileSdk 33
 
     defaultConfig {
@@ -59,11 +59,10 @@ tasks.withType(KotlinCompile).configureEach{
 
 // publish
 mavenPublishing {
-    coordinates("io.github.shawxingkwok", "android-preferencestore", "1.0.0-SNAPSHOT")
-//    coordinates("io.github.shawxingkwok", "preferencestore", "1.0.0")
+    coordinates("io.github.shawxingkwok", "android-kdatastore", "1.0.0-SNAPSHOT")
     pom {
-        name = "Preference store"
-        description = "A data store extension with little configuration, easy encrytation and extensive supported types."
+        name = "KDatastore"
+        description = "A data store extension with little configuration, easy encryption and extensive supported types."
         inceptionYear = "2023"
     }
 }

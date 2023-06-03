@@ -14,9 +14,8 @@ dependencyResolutionManagement {
         maven{ url "https://s01.oss.sonatype.org/content/repositories/snapshots/" }
     }
 }
-rootProject.name = "PreferenceStore"
+rootProject.name = "KDataStore"
 include ':core'
 include ':compose'
-
-include ':demo:compose'
-include ':demo:view'
+include ':examples:compose'
+include ':examples:view'

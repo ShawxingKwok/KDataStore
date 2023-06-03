@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace 'pers.shawxingkwok.preferencestore.compose'
+    namespace 'pers.shawxingkwok.kdatastore.compose'
     compileSdk 33
 
     defaultConfig {
@@ -58,11 +58,11 @@ tasks.withType(KotlinCompile).configureEach{
 
 // publish
 mavenPublishing {
-    coordinates("io.github.shawxingkwok", "android-preferencestore-compose", "1.0.0-SNAPSHOT")
+    coordinates("io.github.shawxingkwok", "android-kdatastore-compose", "1.0.0-SNAPSHOT")
 
     pom {
-        name = "Compose extension from PreferenceStore"
-        description = "Add a extensional function `PreferenceStore.Flow<T>.collectAsDefaultState`"
+        name = "Compose extension from KDataStore"
+        description = "Add a extensional function `KDataStore.Flow<T>.collectAsDefaultState`"
         inceptionYear = "2023"
     }
 }
