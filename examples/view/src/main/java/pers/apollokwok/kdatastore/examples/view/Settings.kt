@@ -11,11 +11,5 @@ data class Location(
 )
 
 object Settings : KDataStore(){
-    val darkMode by enum(DarkMode.FOLLOW_SYSTEM)
-}
-
-enum class DarkMode(val text: String, val corresponding: Int){
-    YES("Dark", AppCompatDelegate.MODE_NIGHT_YES),
-    NO("Light", AppCompatDelegate.MODE_NIGHT_NO),
-    FOLLOW_SYSTEM("Follow system", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+    val isDarkMode by bool(false)
 }
