@@ -1,8 +1,6 @@
-package pers.apollokwok.kdatastore.examples.view
+package pers.shawxingkwok.kdatastore.examples.view
 
 import org.junit.Test
-
-import org.junit.Assert.*
 
 /**
  * Example local unit test, which will execute on the development machine (host).

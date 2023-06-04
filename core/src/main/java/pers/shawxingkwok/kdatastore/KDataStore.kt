@@ -18,7 +18,7 @@ import java.io.*
 import kotlin.reflect.full.functions
 
 /**
- * A data store extension with little configuration, easy encryption and extensive supported types.
+ * An extended data store with little configuration, easy encryption and extensive supported types.
  *
  * See [usage](https://shawxingkwok.github.io/HomeSite/docs/kdatastore/).
  */
@@ -175,7 +175,9 @@ public abstract class KDataStore private constructor(
     public abstract class Flow<T : Any> @PublishedApi internal constructor(
         private val handlerScope: CoroutineScope,
         public val default: T
-    ) : kotlinx.coroutines.flow.Flow<T> {
+    )
+        : kotlinx.coroutines.flow.Flow<T>
+    {
         public abstract suspend fun emit(value: T)
 
         /**

@@ -1,4 +1,4 @@
-package pers.apollokwok.kdatastore.examples.view
+package pers.shawxingkwok.kdatastore.examples.view
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

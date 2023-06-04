@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace 'pers.apollokwok.kdatastore.examples.view'
+    namespace 'pers.shawxingkwok.kdatastore.examples.view'
     compileSdk 33
 
     defaultConfig {
-        applicationId "pers.apollokwok.kdatastore.examples.view"
+        applicationId "pers.shawxingkwok.kdatastore.examples.view"
         minSdk 24
         targetSdk 33
         versionCode 1

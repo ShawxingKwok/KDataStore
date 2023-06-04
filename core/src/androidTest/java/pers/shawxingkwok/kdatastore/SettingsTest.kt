@@ -1,4 +1,6 @@
-@file:Suppress("NO_EXPLICIT_VISIBILITY_IN_API_MODE_WARNING", "NO_EXPLICIT_RETURN_TYPE_IN_API_MODE_WARNING")
+@file:Suppress("NO_EXPLICIT_VISIBILITY_IN_API_MODE_WARNING", "NO_EXPLICIT_RETURN_TYPE_IN_API_MODE_WARNING",
+    "MemberVisibilityCanBePrivate"
+)
 
 package pers.shawxingkwok.kdatastore
 
@@ -15,10 +17,7 @@ enum class Language {
 }
 
 @Serializable
-data class Location(
-    val lat: Double,
-    val lng: Double
-)
+data class Location(val lat: Double, val lng: Double)
 
 @RunWith(AndroidJUnit4::class)
 class SettingsTest : KDataStore(
@@ -46,11 +45,14 @@ class SettingsTest : KDataStore(
     val char by char('1')
     val boolean by bool(false)
     val string by string("1")
-
-    val any by any(1, convert = { it.toString() }, recover = { it.toInt() })
-    val enum: Flow<Language> by enum(Language.ENGLISH)
+    val enum by enum(Language.ENGLISH)
     val ktSerializable by ktSerializable(Location(38.2, 55.3))
     val javaSerializable by javaSerializable(linkedSetOf(1))
+    val any by any(
+        default = 1,
+        convert = { it.toString() },
+        recover = { it.toInt() }
+    )
 
     @Test
     fun foo(): Unit = runBlocking{
