@@ -215,15 +215,15 @@ public abstract class KDataStore private constructor(
             onEmit = onUpdate,
             onCorrupt = onCorrupt,
             convert =
-            if (encrypted)
-                { t: T -> t.toString().encrypt(encryption!!) }
-            else
-                null,
+                if (encrypted)
+                    { t: T -> t.toString().encrypt(encryption!!) }
+                else
+                    null,
             recover =
-            if (encrypted)
-                { data: String -> data.decrypt(encryption!!).let(recover) }
-            else
-                null,
+                if (encrypted)
+                    { data: String -> data.decrypt(encryption!!).let(recover) }
+                else
+                    null,
         )
 
     protected fun int(
