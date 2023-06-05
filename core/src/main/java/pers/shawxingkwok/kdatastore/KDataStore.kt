@@ -20,24 +20,60 @@ import kotlin.reflect.full.functions
 /**
  * An extended data store with little configuration, easy encryption and extensive supported types.
  *
- * See [usage](https://shawxingkwok.github.io/HomeSite/docs/kdatastore/).
+ * See [tutorial](https://shawxingkwok.github.io/HomeSite/docs/kdatastore/).
  */
 public abstract class KDataStore private constructor(
     private val fileName: String,
+    @PublishedApi internal val handlerScope: CoroutineScope,
+    ioScope: CoroutineScope,
     @PublishedApi internal val defaultEncrypted: Boolean,
     @PublishedApi internal val encryption: Encryption?,
 ) {
     //region constructors
-    public constructor(fileName: String = "settings")
-        : this(fileName, false, null)
+    public constructor(
+        fileName: String = "settings",
+        handlerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+        ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    )
+        : this(fileName, handlerScope, ioScope, false, null)
 
     public constructor(
         fileName: String = "settings",
+        handlerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+        ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
         encryption: Encryption,
         defaultEncrypted: Boolean,
     )
-        : this(fileName, defaultEncrypted, encryption)
+        : this(fileName, handlerScope, ioScope, defaultEncrypted, encryption)
     //endregion
+
+    public abstract class Flow<T : Any> @PublishedApi internal constructor(
+        private val handlerScope: CoroutineScope,
+        public val default: T
+    )
+        : kotlinx.coroutines.flow.Flow<T>
+    {
+        public abstract suspend fun emit(value: T)
+
+        /**
+         * [transform]s the old value and emit it.
+         */
+        public abstract suspend fun emit(transform: (T) -> T)
+
+        /**
+         * Emits [value] in an async way.
+         */
+        public fun toss(value: T) {
+            handlerScope.launch { emit(value) }
+        }
+
+        /**
+         * [transform]s the old value and emits it in an async way.
+         */
+        public fun toss(transform: (T) -> T) {
+            handlerScope.launch { emit(transform) }
+        }
+    }
 
     @PublishedApi
     internal var backupPrefs: MutablePreferences? = null
@@ -50,7 +86,7 @@ public abstract class KDataStore private constructor(
     }
 
     //region migrations
-    protected abstract interface Migration {
+    protected interface Migration {
         public suspend fun shouldMigrate(): Boolean
 
         /**
@@ -65,9 +101,6 @@ public abstract class KDataStore private constructor(
         public suspend fun cleanUp()
     }
 
-    /**
-     * See **TODO(website)**
-     */
     protected open fun getMigration(context: Context): Migration =
         object : Migration {
             override suspend fun shouldMigrate(): Boolean = false
@@ -117,9 +150,6 @@ public abstract class KDataStore private constructor(
         }
     //endregion
 
-    @PublishedApi
-    internal val handlerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-
     //region actualStore
     @PublishedApi
     internal val actualStore: DataStore<Preferences> =
@@ -135,7 +165,7 @@ public abstract class KDataStore private constructor(
                 newPrefs
             },
             migrations = listOf(defaultDataMigration, keysFixDataMigration),
-            scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+            scope = ioScope,
             produceFile = {
                 MyInitializer.context.preferencesDataStoreFile(fileName)
             }
@@ -171,34 +201,6 @@ public abstract class KDataStore private constructor(
         actualStore.edit { it.clear() }
     }
     //endregion
-
-    public abstract class Flow<T : Any> @PublishedApi internal constructor(
-        private val handlerScope: CoroutineScope,
-        public val default: T
-    )
-        : kotlinx.coroutines.flow.Flow<T>
-    {
-        public abstract suspend fun emit(value: T)
-
-        /**
-         * [transform]s the old value and emit it.
-         */
-        public abstract suspend fun emit(transform: (T) -> T)
-
-        /**
-         * Emits [value] in an async way.
-         */
-        public fun toss(value: T) {
-            handlerScope.launch { emit(value) }
-        }
-
-        /**
-         * [transform]s the old value and emits it in an async way.
-         */
-        public fun toss(transform: (T) -> T) {
-            handlerScope.launch { emit(transform) }
-        }
-    }
 
     //region direct delegates
     private inline fun <reified T : Any> KDataStore.direct(

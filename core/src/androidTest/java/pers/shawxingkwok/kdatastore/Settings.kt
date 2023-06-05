@@ -11,6 +11,7 @@ import kotlinx.serialization.Serializable
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
+import pers.shawxingkwok.kdatastore.Settings.bool
 
 enum class Language {
     ENGLISH, GERMAN, SPANISH
@@ -19,31 +20,33 @@ enum class Language {
 @Serializable
 data class Location(val lat: Double, val lng: Double)
 
+// encryption = Encryption.AES(
+// ivBytes =
+// listOf(
+// 0x16, 0x09, 0xc0, 0x4d,
+// 0x4a, 0x09, 0xd2, 0x46,
+// 0x71, 0xcc, 0x32, 0xb7,
+// 0xd2, 0x91, 0x8a, 0x9c,
+// )
+// .map { it.toByte() }
+// .toByteArray(),
+// salt = "salt",
+// password = "demo",
+// ),
+// defaultEncrypted = true,
+
 @RunWith(AndroidJUnit4::class)
-class SettingsTest : KDataStore(
-    encryption = Encryption.AES(
-        ivBytes =
-            listOf(
-                0x16, 0x09, 0xc0, 0x4d,
-                0x4a, 0x09, 0xd2, 0x46,
-                0x71, 0xcc, 0x32, 0xb7,
-                0xd2, 0x91, 0x8a, 0x9c,
-            )
-            .map { it.toByte() }
-            .toByteArray(),
-        salt = "salt",
-        password = "demo",
-    ),
-    defaultEncrypted = true,
-){
+object Settings : KDataStore() {
+    val isDarkMode by bool(false)
+
+    val bool by bool(false)
+    val char by char('1')
     val byte by byte(1)
     val short by short(1)
     val int by int(1)
     val long by long(1)
     val float by float(1.0f)
     val double by double(1.0)
-    val char by char('1')
-    val boolean by bool(false)
     val string by string("1")
     val enum by enum(Language.ENGLISH)
     val ktSerializable by ktSerializable(Location(38.2, 55.3))
@@ -55,15 +58,15 @@ class SettingsTest : KDataStore(
     )
 
     @Test
-    fun foo(): Unit = runBlocking{
+    fun foo(): Unit = runBlocking {
         launch {
             val flow1 = combine(byte, short, int, long) { a, b, c, d -> "$a $b $c $d" }
-            val flow2 = combine(float, double, boolean, char) { a, b, c, d -> "$a $b $c $d" }
+            val flow2 = combine(float, double, bool, char) { a, b, c, d -> "$a $b $c $d" }
             val flow3 = combine(string, any, enum, ktSerializable, javaSerializable)
             { a, b, c, d, e -> "$a $b $c $d $e" }
 
             combine(flow1, flow2, flow3) { a, b, c -> "$a $b $c" }
-            .collect { MLog(it) }
+                .collect { MLog(it) }
         }
 
         launch {
@@ -85,7 +88,7 @@ class SettingsTest : KDataStore(
             long.emit { it + 1 }
             float.emit { it + 1 }
             double.emit { it + 1 }
-            boolean.emit { !it }
+            bool.emit { !it }
             char.emit { it + 1 }
 
             string.emit { (it.toLong() + 1).toString() }
@@ -110,7 +113,7 @@ class SettingsTest : KDataStore(
             long.toss { it + 1 }
             float.toss { it + 1 }
             double.toss { it + 1 }
-            boolean.toss { !it }
+            bool.toss { !it }
             char.toss { it + 1 }
 
             string.toss { (it.toLong() + 1).toString() }

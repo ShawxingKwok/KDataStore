@@ -19,6 +19,7 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("pers.shawxingkwok.kdatastore.test", appContext.packageName)
+        println(appContext.packageName)
+        assertEquals("pers.shawxingkwok.kdatastore.compose.test", appContext.packageName)
     }
 }
