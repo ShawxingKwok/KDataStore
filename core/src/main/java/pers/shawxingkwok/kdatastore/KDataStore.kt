@@ -20,7 +20,7 @@ import kotlin.reflect.full.functions
 /**
  * An extended data store with little configuration, easy encryption and extensive supported types.
  *
- * See [tutorial](https://shawxingkwok.github.io/HomeSite/docs/kdatastore/).
+ * See [tutorial](https://shawxingkwok.github.io/ITWorks/docs/kdatastore/).
  */
 public abstract class KDataStore private constructor(
     private val fileName: String,

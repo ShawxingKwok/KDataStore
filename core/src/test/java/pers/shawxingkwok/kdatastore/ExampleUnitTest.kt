@@ -19,12 +19,5 @@ class ExampleUnitTest {
     @Test
     fun foo(){
         val src = MutableStateFlow(1)
-        val flow = src.map { it * 10 }.onEach { src.emit(2) }
-
-        runBlocking {
-            flow.collect{
-                println(it)
-            }
-        }
     }
 }
