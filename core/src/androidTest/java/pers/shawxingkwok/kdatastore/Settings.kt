@@ -11,7 +11,6 @@ import kotlinx.serialization.Serializable
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
-import pers.shawxingkwok.kdatastore.Settings.bool
 
 enum class Language {
     ENGLISH, GERMAN, SPANISH
@@ -36,7 +35,7 @@ data class Location(val lat: Double, val lng: Double)
 // defaultEncrypted = true,
 
 @RunWith(AndroidJUnit4::class)
-object Settings : KDataStore() {
+class Settings : KDataStore() {
     val isDarkMode by bool(false)
 
     val bool by bool(false)
@@ -57,8 +56,10 @@ object Settings : KDataStore() {
         recover = { it.toInt() }
     )
 
+    @OptIn(Reset::class)
     @Test
     fun foo(): Unit = runBlocking {
+        reset()
         launch {
             val flow1 = combine(byte, short, int, long) { a, b, c, d -> "$a $b $c $d" }
             val flow2 = combine(float, double, bool, char) { a, b, c, d -> "$a $b $c $d" }
@@ -73,7 +74,7 @@ object Settings : KDataStore() {
             emitTest()
         }
         launch {
-//            tossTest()
+           tossTest()
         }
     }
 

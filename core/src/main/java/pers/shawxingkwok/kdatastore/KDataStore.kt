@@ -380,12 +380,12 @@ public abstract class KDataStore private constructor(
                 oos.writeObject(t)
                 oos.close()
                 bos.close()
-                val bytes = bos.toByteArray().updateIf({ encrypted }, encryption!!::encrypt)
+                val bytes = bos.toByteArray().updateIf({ encrypted }){ encryption!!.encrypt(it) }
                 Base64.encodeToString(bytes, Base64.DEFAULT)
             },
-            recover = {
-                val bytes = Base64.decode(it, Base64.DEFAULT)
-                    .updateIf({ encrypted }, encryption!!::decrypt)
+            recover = { src ->
+                val bytes = Base64.decode(src, Base64.DEFAULT)
+                    .updateIf({ encrypted }){ encryption!!.decrypt(it) }
 
                 val bis = ByteArrayInputStream(bytes)
                 val ois = ObjectInputStream(bis)
