@@ -1,5 +1,6 @@
 package pers.shawxingkwok.kdatastore
 
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.flow.FlowCollector
@@ -15,9 +16,10 @@ import kotlin.reflect.KProperty
 internal inline fun <reified T : Any> FlowDelegate(
     default: T,
     encrypted: Boolean,
+    backup: Boolean,
+    actualStore: DataStore<Preferences>,
+    backupStore: DataStore<Preferences>,
     noinline getKey: (String) -> Preferences.Key<*>,
-    noinline onEmit: suspend (T) -> Unit,
-    noinline onCorrupt: suspend () -> T,
     noinline convert: ((T) -> String)?,
     noinline recover: ((String) -> T)?,
 )
@@ -25,25 +27,41 @@ internal inline fun <reified T : Any> FlowDelegate(
     object : KReadOnlyProperty<KDataStore, KDataStore.Flow<T>> {
         lateinit var flow: KDataStore.Flow<T>
 
-        suspend fun recoverFromSrc(path: String, src: Any?): T =
-            try {
+        suspend fun recoverFromSrc(path: String, src: Any?, key: Preferences.Key<Any>): T {
+            return try {
                 when {
                     src == null -> default
                     recover != null -> recover(src as String)
                     else -> (src as T)
                 }
             } catch (e: Exception) {
-                val backupValue = onCorrupt()
-                flow.emit(backupValue)
-                MLog.e("$path corrupted and the value $backupValue got via 'onCorrupt' is invoked.")
-                backupValue
+                if (!backup) {
+                    MLog.e("$path corrupted and the default value $default is used.")
+                    return default
+                }
+
+                try {
+                    val backupSrc = backupStore.data.first()[key]!!
+
+                    val backupValue =
+                        if (recover != null)
+                            recover(backupSrc as String)
+                        else
+                            backupSrc as T
+
+                    MLog.e("$path corrupted and the backup value $backupValue is used.")
+                    actualStore.edit { it[key] = backupSrc }
+                    backupValue
+                } catch (e: Exception) {
+                    actualStore.edit { it -= key }
+                    backupStore.edit { it -= key }
+                    MLog.e("Both $path and ${path}_backup corrupted. The default value $default is used.")
+                    default
+                }
             }
+        }
 
         override fun onDelegate(thisRef: KDataStore, property: KProperty<*>) {
-            thisRef.corruptionHandlers += {
-                flow.emit(onCorrupt())
-            }
-
             val locatedProp = "${thisRef.javaClass.canonicalName}.${property.name}"
             require(!encrypted || thisRef.encryption != null) {
                 "$locatedProp is encrypted without encryption."
@@ -51,30 +69,30 @@ internal inline fun <reified T : Any> FlowDelegate(
 
             @Suppress("UNCHECKED_CAST")
             val key = getKey(property.name) as Preferences.Key<Any>
-            thisRef.neededKeys += key
+            thisRef.fixer.keys += key
+            if (backup)
+                thisRef.fixer.backupKeys += key
 
             val data: kotlinx.coroutines.flow.Flow<T> = thisRef.caughtData
                 .map { it[key] }
                 .distinctUntilChanged()
-                .map { recoverFromSrc(locatedProp, it) }
+                .map { recoverFromSrc(locatedProp, it, key) }
 
             flow = object : KDataStore.Flow<T>(thisRef.handlerScope, default) {
                 override suspend fun collect(collector: FlowCollector<T>) {
-                    require(thisRef.backupPrefs == null) {
+                    require(thisRef.migratedPrefs == null) {
                         "Collection is forbidden in migration and 'onCorrupt."
                     }
                     data.collect(collector)
                 }
 
                 override suspend fun emit(value: T) {
-                    onEmit(value)
-
                     var converted: Any = value
 
                     if (convert != null)
                         converted = convert(converted as T)
 
-                    when (val prefs = thisRef.backupPrefs) {
+                    when (val prefs = thisRef.migratedPrefs) {
                         // When IOException occurs, the flow collector wouldn't be activated, which encourages
                         // user to edit again.
                         null ->
@@ -89,11 +107,11 @@ internal inline fun <reified T : Any> FlowDelegate(
                 }
 
                 override suspend fun emit(transform: (T) -> T) {
-                    val value = when (val prefs = thisRef.backupPrefs) {
+                    val value = when (val prefs = thisRef.migratedPrefs) {
                         null -> transform(first())
                         else -> {
                             val src = prefs[key]
-                            val recovered = recoverFromSrc(locatedProp, src)
+                            val recovered = recoverFromSrc(locatedProp, src, key)
                             transform(recovered)
                         }
                     }
@@ -102,5 +120,5 @@ internal inline fun <reified T : Any> FlowDelegate(
             }
         }
 
-        override fun getValue(thisRef: KDataStore, property: KProperty<*>): KDataStore.Flow<T> = flow
+         override fun getValue(thisRef: KDataStore, property: KProperty<*>): KDataStore.Flow<T> = flow
     }
