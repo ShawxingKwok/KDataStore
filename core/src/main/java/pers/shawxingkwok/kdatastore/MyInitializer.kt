@@ -15,5 +15,6 @@ internal class MyInitializer : Initializer<Unit> {
         Companion.context = context
     }
 
+
     override fun dependencies(): List<Class<out Initializer<*>>> = emptyList()
 }
