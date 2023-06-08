@@ -84,7 +84,7 @@ public abstract class KDataStore private constructor(
      *
      * Note: this is needless in [getMigration].
      */
-    public suspend inline fun updateAll(crossinline act: () -> Unit) {
+    public suspend fun updateAll(act: suspend () -> Unit) {
         updatedAllPrefs = actualStore.data.first().toMutablePreferences()
         act()
         actualStore.updateData { updatedAllPrefs!! }
@@ -99,7 +99,7 @@ public abstract class KDataStore private constructor(
             fixer.backupKeys.forEach { key ->
                 @Suppress("UNCHECKED_CAST")
                 key as Preferences.Key<Any>
-                it[key] = prefs[key]!!
+                it[key] = prefs[key] ?: return@forEach
             }
         }
     }

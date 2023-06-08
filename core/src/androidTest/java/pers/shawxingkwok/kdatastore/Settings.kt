@@ -7,6 +7,7 @@ package pers.shawxingkwok.kdatastore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import org.junit.Assert.*
 import org.junit.Test
@@ -36,22 +37,21 @@ data class Location(val lat: Double, val lng: Double)
 
 @RunWith(AndroidJUnit4::class)
 class Settings : KDataStore() {
-    val isDarkMode by bool(false)
-
-    val bool by bool(false)
-    val char by char('1')
-    val byte by byte(1)
-    val short by short(1)
-    val int by int(1)
-    val long by long(1)
-    val float by float(1.0f)
-    val double by double(1.0)
-    val string by string("1")
-    val enum by enum(Language.ENGLISH)
-    val ktSerializable by ktSerializable(Location(38.2, 55.3))
-    val javaSerializable by javaSerializable(linkedSetOf(1))
+    val bool by bool(false, backup = false)
+    val char by char('1', backup = false)
+    val byte by byte(1, backup = true)
+    val short by short(1, backup = true)
+    val int by int(1, backup = true)
+    val long by long(1, backup = true)
+    val float by float(1.0f, backup = true)
+    val double by double(1.0, backup = true)
+    val string by string("1", backup = true)
+    val enum by enum(Language.ENGLISH, backup = true)
+    val ktSerializable by ktSerializable(Location(38.2, 55.3), backup = true)
+    val javaSerializable by javaSerializable(linkedSetOf(1), backup = true)
     val any by any(
         default = 1,
+        backup = true,
         convert = { it.toString() },
         recover = { it.toInt() }
     )
@@ -59,7 +59,6 @@ class Settings : KDataStore() {
     @OptIn(Reset::class)
     @Test
     fun foo(): Unit = runBlocking {
-        reset()
         launch {
             val flow1 = combine(byte, short, int, long) { a, b, c, d -> "$a $b $c $d" }
             val flow2 = combine(float, double, bool, char) { a, b, c, d -> "$a $b $c $d" }

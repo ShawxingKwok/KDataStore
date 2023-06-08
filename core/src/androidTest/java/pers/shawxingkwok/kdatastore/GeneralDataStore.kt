@@ -27,8 +27,6 @@ import kotlin.time.measureTime
 @OptIn(ExperimentalTime::class)
 @RunWith(AndroidJUnit4::class)
 internal class GeneralDataStore {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
-
     val Context.dataStore by preferencesDataStore("test")
     val dataStore = context.dataStore
 
