@@ -202,15 +202,27 @@ public abstract class KDataStore private constructor(
             emit(backupPrefs)
         }
 
-    //region reset
+    //region delicate functions: reset delete exists
     @RequiresOptIn
     @Retention(AnnotationRetention.BINARY)
-    public annotation class Reset
+    public annotation class Delicate
 
-    @Reset
+    @Delicate
     public suspend fun reset() {
         actualStore.updateData { emptyPreferences() }
         backupStore.updateData { emptyPreferences() }
+    }
+
+    private fun getFile() = File(MyInitializer.context.filesDir, "datastore/$fileName.preferences_pb")
+    private fun getBackupFile() = File(MyInitializer.context.filesDir, "datastore/${fileName}_backup.preferences_pb")
+
+    @Delicate
+    public fun delete(): Boolean {
+        return getFile().delete() && getBackupFile().delete()
+    }
+
+    public fun exists(): Boolean{
+        return getFile().exists()
     }
     //endregion
 

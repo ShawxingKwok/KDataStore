@@ -7,7 +7,6 @@ package pers.shawxingkwok.kdatastore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import org.junit.Assert.*
 import org.junit.Test
@@ -56,7 +55,7 @@ class Settings : KDataStore() {
         recover = { it.toInt() }
     )
 
-    @OptIn(Reset::class)
+    @OptIn(Delicate::class)
     @Test
     fun foo(): Unit = runBlocking {
         launch {
@@ -77,7 +76,9 @@ class Settings : KDataStore() {
         }
     }
 
+    @OptIn(Delicate::class)
     suspend fun emitTest() {
+        reset()
         MLog("emit")
 
         while (true) {
@@ -90,7 +91,6 @@ class Settings : KDataStore() {
             double.emit { it + 1 }
             bool.emit { !it }
             char.emit { it + 1 }
-
             string.emit { (it.toLong() + 1).toString() }
             any.emit { it + 1 }
             enum.emit {
