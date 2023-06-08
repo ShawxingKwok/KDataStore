@@ -3,6 +3,9 @@ package pers.shawxingkwok.kdatastore
 import androidx.datastore.core.DataMigration
 import androidx.datastore.preferences.core.Preferences
 
+/**
+ * Removes those data of removed properties.
+ */
 @PublishedApi
 internal class Fixer {
     private class FixDataMigration(private val neededKeys: MutableSet<Preferences.Key<*>>)
@@ -12,7 +15,6 @@ internal class Fixer {
 
         override suspend fun shouldMigrate(currentData: Preferences): Boolean {
             needlessKeys = currentData.asMap().keys - neededKeys
-            neededKeys.clear()
             return needlessKeys.any()
         }
 

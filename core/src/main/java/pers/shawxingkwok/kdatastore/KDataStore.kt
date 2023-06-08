@@ -75,21 +75,39 @@ public abstract class KDataStore private constructor(
         }
     }
 
-    @PublishedApi
-    internal var migratedPrefs: MutablePreferences? = null
-
+    //region fun updateAll
     @PublishedApi
     internal var updatedAllPrefs: MutablePreferences? = null
 
     /**
+     * Only writes once to the disk.
+     *
      * Note: this is needless in [getMigration].
      */
+    public suspend inline fun updateAll(crossinline act: () -> Unit) {
+        updatedAllPrefs = actualStore.data.first().toMutablePreferences()
+        act()
+        actualStore.updateData { updatedAllPrefs!! }
+        updateBackupStore(updatedAllPrefs!!)
+        updatedAllPrefs = null
+    }
+    //endregion
+
     @PublishedApi
-    internal suspend inline fun updateAll(act: () -> Unit) {
-        TODO()
+    internal suspend fun updateBackupStore(prefs: Preferences){
+        backupStore.edit {
+            fixer.backupKeys.forEach { key ->
+                @Suppress("UNCHECKED_CAST")
+                key as Preferences.Key<Any>
+                it[key] = prefs[key]!!
+            }
+        }
     }
 
     //region migrations
+    @PublishedApi
+    internal var migratedPrefs: MutablePreferences? = null
+
     protected interface Migration {
         public suspend fun shouldMigrate(): Boolean
 
@@ -122,11 +140,13 @@ public abstract class KDataStore private constructor(
             override suspend fun migrate(currentData: Preferences): Preferences {
                 migratedPrefs = currentData.toMutablePreferences()
                 migration.migrate()
-                return migratedPrefs!!.also { migratedPrefs = null }
+                updateBackupStore(migratedPrefs!!)
+                return migratedPrefs!!
             }
 
             override suspend fun cleanUp() {
                 migration.cleanUp()
+                migratedPrefs = null
             }
         }
     //endregion
@@ -134,7 +154,7 @@ public abstract class KDataStore private constructor(
     @PublishedApi
     internal val fixer: Fixer = Fixer()
 
-    //region actualStore
+    //region actualStore backupStore
     @PublishedApi
     internal val actualStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
@@ -154,7 +174,7 @@ public abstract class KDataStore private constructor(
     @PublishedApi
     internal val backupStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
-            corruptionHandler = null,
+            corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
             migrations = listOf(fixer.backupFixDataMigration),
             scope = ioScope,
             produceFile = {
@@ -166,12 +186,20 @@ public abstract class KDataStore private constructor(
     @PublishedApi
     internal val caughtData: kotlinx.coroutines.flow.Flow<Preferences> =
         actualStore.data
-        .catch {
-            if (it is IOException) {
-                it.printStackTrace()
-                emit(backupStore.data.first())
-            }
-            else throw it
+        .catch { tr ->
+            if (tr !is IOException) throw tr
+
+            tr.printStackTrace()
+
+            val backupPrefs = backupStore.data
+                .catch {
+                    if (it !is IOException) throw it
+                    it.printStackTrace()
+                    emit(emptyPreferences())
+                }
+                .first()
+
+            emit(backupPrefs)
         }
 
     //region reset
@@ -181,7 +209,8 @@ public abstract class KDataStore private constructor(
 
     @Reset
     public suspend fun reset() {
-        actualStore.edit { it.clear() }
+        actualStore.updateData { emptyPreferences() }
+        backupStore.updateData { emptyPreferences() }
     }
     //endregion
 

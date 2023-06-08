@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
+import pers.shawxingkwok.ktutil.updateIf
 import java.io.IOException
 import kotlin.reflect.KProperty
 
@@ -80,24 +81,19 @@ internal inline fun <reified T : Any> FlowDelegate(
 
             flow = object : KDataStore.Flow<T>(thisRef.handlerScope, default) {
                 override suspend fun collect(collector: FlowCollector<T>) {
-                    require(thisRef.migratedPrefs == null) {
-                        "Collection is forbidden in migration and 'onCorrupt."
-                    }
                     data.collect(collector)
                 }
 
                 override suspend fun emit(value: T) {
-                    var converted: Any = value
+                    val converted = (value as Any).updateIf({ convert != null }){ convert!!(value) }
 
-                    if (convert != null)
-                        converted = convert(converted as T)
-
-                    when (val prefs = thisRef.migratedPrefs) {
+                    when (val prefs = thisRef.migratedPrefs ?: thisRef.updatedAllPrefs) {
                         // When IOException occurs, the flow collector wouldn't be activated, which encourages
                         // user to edit again.
                         null ->
                             try {
                                 thisRef.actualStore.edit { it[key] = converted }
+                                if (backup) thisRef.backupStore.edit { it[key] = converted }
                             }catch (e: IOException){
                                 e.printStackTrace()
                             }
@@ -107,7 +103,7 @@ internal inline fun <reified T : Any> FlowDelegate(
                 }
 
                 override suspend fun emit(transform: (T) -> T) {
-                    val value = when (val prefs = thisRef.migratedPrefs) {
+                    val value = when (val prefs = thisRef.migratedPrefs ?: thisRef.updatedAllPrefs) {
                         null -> transform(first())
                         else -> {
                             val src = prefs[key]
