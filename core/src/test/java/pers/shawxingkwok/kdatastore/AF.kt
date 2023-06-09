@@ -1,5 +1,8 @@
 package pers.shawxingkwok.kdatastore
 
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.Test
 
 internal abstract class Super {
@@ -12,7 +15,7 @@ internal class Sub : Super() {
 
     @Test
     fun foo() {
-        println(x)
+        Json.encodeToString(arrayListOf(1)).let { Json.decodeFromString<ArrayList<Int>>(it) }.let(::println)
     }
 
     override fun bar(): Int{

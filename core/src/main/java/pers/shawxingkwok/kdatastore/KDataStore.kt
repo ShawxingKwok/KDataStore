@@ -2,6 +2,7 @@ package pers.shawxingkwok.kdatastore
 
 import android.content.Context
 import android.util.Base64
+import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataMigration
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
@@ -13,7 +14,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
-import pers.shawxingkwok.ktutil.updateIf
 import java.io.*
 import kotlin.reflect.full.functions
 
@@ -22,31 +22,13 @@ import kotlin.reflect.full.functions
  *
  * See [tutorial](https://shawxingkwok.github.io/ITWorks/docs/kdatastore/).
  */
-public abstract class KDataStore private constructor(
-    private val fileName: String,
-    @PublishedApi internal val handlerScope: CoroutineScope,
-    ioScope: CoroutineScope,
-    @PublishedApi internal val defaultEncrypted: Boolean,
-    @PublishedApi internal val encryption: Encryption?,
+public abstract class KDataStore(
+    private val fileName: String = "settings",
+    @PublishedApi internal val handlerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+    ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    @PublishedApi internal val cypher: Cypher? = null,
 ) {
-    //region constructors
-    public constructor(
-        fileName: String = "settings",
-        handlerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
-        ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-    )
-        : this(fileName, handlerScope, ioScope, false, null)
-
-    public constructor(
-        fileName: String = "settings",
-        handlerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
-        ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-        encryption: Encryption,
-        defaultEncrypted: Boolean,
-    )
-        : this(fileName, handlerScope, ioScope, defaultEncrypted, encryption)
-    //endregion
-
+    //region Flow
     public abstract class Flow<T : Any> @PublishedApi internal constructor(
         private val handlerScope: CoroutineScope,
         public val default: T
@@ -74,6 +56,7 @@ public abstract class KDataStore private constructor(
             handlerScope.launch { emit(transform) }
         }
     }
+    //endregion
 
     //region fun updateAll
     @PublishedApi
@@ -88,21 +71,10 @@ public abstract class KDataStore private constructor(
         updatedAllPrefs = actualStore.data.first().toMutablePreferences()
         act()
         actualStore.updateData { updatedAllPrefs!! }
-        updateBackupStore(updatedAllPrefs!!)
+        backup.update(updatedAllPrefs!!)
         updatedAllPrefs = null
     }
     //endregion
-
-    @PublishedApi
-    internal suspend fun updateBackupStore(prefs: Preferences){
-        backupStore.edit {
-            fixer.backupKeys.forEach { key ->
-                @Suppress("UNCHECKED_CAST")
-                key as Preferences.Key<Any>
-                it[key] = prefs[key] ?: return@forEach
-            }
-        }
-    }
 
     //region migrations
     @PublishedApi
@@ -140,7 +112,7 @@ public abstract class KDataStore private constructor(
             override suspend fun migrate(currentData: Preferences): Preferences {
                 migratedPrefs = currentData.toMutablePreferences()
                 migration.migrate()
-                updateBackupStore(migratedPrefs!!)
+                backup.update(migratedPrefs!!)
                 return migratedPrefs!!
             }
 
@@ -152,35 +124,95 @@ public abstract class KDataStore private constructor(
     //endregion
 
     @PublishedApi
-    internal val fixer: Fixer = Fixer()
+    internal val keys: MutableSet<Preferences.Key<*>> = mutableSetOf()
 
-    //region actualStore backupStore
+    @PublishedApi
+    internal val fixMigration: DataMigration<Preferences> = object : DataMigration<Preferences> {
+
+        lateinit var needlessKeys: Set<Preferences.Key<*>>
+
+        override suspend fun shouldMigrate(currentData: Preferences): Boolean {
+            needlessKeys = currentData.asMap().keys - keys
+            return needlessKeys.any()
+        }
+
+        override suspend fun migrate(currentData: Preferences): Preferences {
+            val prefs = currentData.toMutablePreferences()
+            needlessKeys.forEach { prefs -= it }
+            return prefs
+        }
+
+        override suspend fun cleanUp() {}
+    }
+
+    //region actualStore
     @PublishedApi
     internal val actualStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler {
-                //todo: remove 'runBlocking' after the official fix
+                //todo: replace 'runBlocking' with 'suspend' after the official fix
                 runBlocking {
-                    backupStore.data.first()
+                    backup.getPreferences()
                 }
             },
-            migrations = listOf(defaultDataMigration, fixer.generalFixDataMigration),
+            migrations = listOf(defaultDataMigration, fixMigration),
             scope = ioScope,
             produceFile = {
                 MyInitializer.context.preferencesDataStoreFile(fileName)
             }
         )
+    //endregion
 
+    //region backup
     @PublishedApi
-    internal val backupStore: DataStore<Preferences> =
-        PreferenceDataStoreFactory.create(
+    internal inner class Backup{
+        private val dataStore = PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
-            migrations = listOf(fixer.backupFixDataMigration),
-            scope = ioScope,
+            migrations = listOf(fixMigration),
+            scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
             produceFile = {
                 MyInitializer.context.preferencesDataStoreFile(fileName + "_backup")
             }
         )
+
+        private val backupHandlerScope: CoroutineScope =
+            CoroutineScope(Dispatchers.Default + SupervisorJob())
+
+        suspend fun getPreferences() = dataStore
+            .data
+            .catch {
+                if (it is IOException)
+                    emit(emptyPreferences())
+                else {
+                    it.printStackTrace()
+                    throw it
+                }
+            }
+            .first()
+
+        fun update(preferences: Preferences){
+            backupHandlerScope.launch {
+                try {
+                    dataStore.updateData { preferences }
+                }catch (e: IOException){
+                    e.printStackTrace()
+                }
+            }
+        }
+
+        fun edit(act: suspend (MutablePreferences) -> Unit){
+            backupHandlerScope.launch {
+                try {
+                    dataStore.edit(act)
+                }catch (e: IOException){
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+    @PublishedApi
+    internal val backup: Backup = Backup()
     //endregion
 
     @PublishedApi
@@ -188,40 +220,31 @@ public abstract class KDataStore private constructor(
         actualStore.data
         .catch { tr ->
             if (tr !is IOException) throw tr
-
             tr.printStackTrace()
-
-            val backupPrefs = backupStore.data
-                .catch {
-                    if (it !is IOException) throw it
-                    it.printStackTrace()
-                    emit(emptyPreferences())
-                }
-                .first()
-
-            emit(backupPrefs)
+            emit(backup.getPreferences())
         }
 
     //region delicate functions: reset delete exists
     @RequiresOptIn
     @Retention(AnnotationRetention.BINARY)
-    public annotation class Delicate
+    public annotation class DelicateApi
 
-    @Delicate
+    @DelicateApi
     public suspend fun reset() {
         actualStore.updateData { emptyPreferences() }
-        backupStore.updateData { emptyPreferences() }
+        backup.update(emptyPreferences())
     }
 
     private fun getFile() = File(MyInitializer.context.filesDir, "datastore/$fileName.preferences_pb")
     private fun getBackupFile() = File(MyInitializer.context.filesDir, "datastore/${fileName}_backup.preferences_pb")
 
-    @Delicate
+    @DelicateApi
     public fun delete(): Boolean {
         return getFile().delete() && getBackupFile().delete()
     }
 
-    public fun exists(): Boolean{
+    // todo: consider about 'getBackupFile().exists()'
+    public fun exists(): Boolean {
         return getFile().exists()
     }
     //endregion
@@ -229,144 +252,80 @@ public abstract class KDataStore private constructor(
     //region direct delegates
     private inline fun <reified T : Any> KDataStore.direct(
         default: T,
-        encrypted: Boolean,
-        backup: Boolean,
         noinline getKey: (String) -> Preferences.Key<T>,
         noinline recover: (String) -> T,
     )
     : KReadOnlyProperty<KDataStore, Flow<T>> =
-        FlowDelegate(
-            default = default,
-            encrypted = encrypted,
-            backup = backup,
-            actualStore = actualStore,
-            backupStore = backupStore,
-            getKey = if (encrypted) ::stringPreferencesKey else getKey,
-            convert =
-                if (encrypted)
-                    { t: T -> t.toString().encrypt(encryption!!) }
-                else
-                    null,
-            recover =
-                if (encrypted)
-                    { data: String -> data.decrypt(encryption!!).let(recover) }
-                else
-                    null,
-        )
+        if (cypher == null)
+            FlowDelegate(
+                default = default,
+                getKey = getKey,
+                convert = null,
+                recover = null,
+            )
+        else
+            anyWithString(
+                default = default,
+                convert = Any::toString,
+                recover = recover,
+            )
 
-    protected fun int(
-        default: Int,
-        encrypted: Boolean = defaultEncrypted,
-        backup: Boolean = false,
-    )
-    : KReadOnlyProperty<KDataStore, Flow<Int>> =
-        direct(default, encrypted, backup, ::intPreferencesKey, String::toInt)
+    protected fun int(default: Int): KReadOnlyProperty<KDataStore, Flow<Int>> =
+        direct(default, ::intPreferencesKey, String::toInt)
 
-    protected fun long(
-        default: Long,
-        encrypted: Boolean = defaultEncrypted,
-        backup: Boolean = false,
-    )
-    : KReadOnlyProperty<KDataStore, Flow<Long>> =
-        direct(default, encrypted, backup, ::longPreferencesKey, String::toLong)
+    protected fun long(default: Long): KReadOnlyProperty<KDataStore, Flow<Long>> =
+        direct(default, ::longPreferencesKey, String::toLong)
 
-    protected fun float(
-        default: Float,
-        encrypted: Boolean = defaultEncrypted,
-        backup: Boolean = false,
-    )
-    : KReadOnlyProperty<KDataStore, Flow<Float>> =
-        direct(default, encrypted, backup, ::floatPreferencesKey, String::toFloat)
+    protected fun float(default: Float): KReadOnlyProperty<KDataStore, Flow<Float>> =
+        direct(default, ::floatPreferencesKey, String::toFloat)
 
-    protected fun double(
-        default: Double,
-        encrypted: Boolean = defaultEncrypted,
-        backup: Boolean = false,
-    )
-    : KReadOnlyProperty<KDataStore, Flow<Double>> =
-        direct(default, encrypted, backup, ::doublePreferencesKey, String::toDouble)
+    protected fun double(default: Double): KReadOnlyProperty<KDataStore, Flow<Double>> =
+        direct(default, ::doublePreferencesKey, String::toDouble)
 
-    protected fun bool(
-        default: Boolean,
-        encrypted: Boolean = defaultEncrypted,
-        backup: Boolean = false,
-    )
-    : KReadOnlyProperty<KDataStore, Flow<Boolean>> =
-        direct(default, encrypted, backup, ::booleanPreferencesKey, String::toBoolean)
+    protected fun bool(default: Boolean): KReadOnlyProperty<KDataStore, Flow<Boolean>> =
+        direct(default, ::booleanPreferencesKey, String::toBoolean)
 
-    protected fun string(
-        default: String,
-        encrypted: Boolean = defaultEncrypted,
-        backup: Boolean = false,
-    )
-    : KReadOnlyProperty<KDataStore, Flow<String>> =
-        direct(default, encrypted, backup, ::stringPreferencesKey) { it }
+    protected fun string(default: String): KReadOnlyProperty<KDataStore, Flow<String>> =
+        direct(default, ::stringPreferencesKey) { it }
     //endregion
 
     //region converted delegates
-    protected inline fun <reified T : Any> KDataStore.any(
+    @PublishedApi
+    internal inline fun <reified T : Any> KDataStore.anyWithString(
         default: T,
-        encrypted: Boolean = defaultEncrypted,
-        backup: Boolean = false,
         noinline convert: (T) -> String,
         noinline recover: (String) -> T,
     )
     : KReadOnlyProperty<KDataStore, Flow<T>> =
         FlowDelegate(
             default = default,
-            encrypted = encrypted,
-            backup = backup,
-            actualStore = actualStore,
-            backupStore = backupStore,
             getKey = ::stringPreferencesKey,
             convert =
-                if (encrypted)
-                    { t: T -> convert(t).encrypt(encryption!!) }
+                if (cypher != null)
+                    { t: T ->
+                        convert(t)
+                        .toByteArray()
+                        .let(cypher::encrypt)
+                        .let { Base64.encodeToString(it, Base64.DEFAULT) }
+                    }
                 else
                     convert,
             recover =
-                if (encrypted)
-                    { data: String -> data.decrypt(encryption!!).let(recover) }
+                if (cypher != null) { data: String ->
+                    Base64.decode(data, Base64.DEFAULT)
+                        .let(cypher::decrypt)
+                        .let(::String)
+                        .let(recover)
+                }
                 else
                     recover,
         )
 
-    protected fun byte(
-        default: Byte,
-        encrypted: Boolean = defaultEncrypted,
-        backup: Boolean = false,
-    )
-    : KReadOnlyProperty<KDataStore, Flow<Byte>> =
-        any(default, encrypted, backup, convert = Any::toString, recover = String::toByte)
-
-    protected fun short(
-        default: Short,
-        encrypted: Boolean = defaultEncrypted,
-        backup: Boolean = false,
-    )
-    : KReadOnlyProperty<KDataStore, Flow<Short>> =
-        any(default, encrypted, backup, convert = Any::toString, recover = String::toShort)
-
-    protected fun char(
-        default: Char,
-        encrypted: Boolean = defaultEncrypted,
-        backup: Boolean = false,
-    )
-    : KReadOnlyProperty<KDataStore, Flow<Char>> =
-        any(default, encrypted, backup, convert = Any::toString, recover = String::single)
-
-    protected inline fun <reified T : Enum<T>> enum(
-        default: T,
-        encrypted: Boolean = defaultEncrypted,
-        backup: Boolean = false,
-    )
-    : KReadOnlyProperty<KDataStore, Flow<T>> {
+    protected inline fun <reified T : Enum<T>> enum(default: T): KReadOnlyProperty<KDataStore, Flow<T>> {
         val valueOf = default::class.functions.first { it.name == "valueOf" }
 
-        return any(
+        return anyWithString(
             default = default,
-            encrypted = encrypted,
-            backup = backup,
             convert = Any::toString,
             recover = {
                 valueOf.call(it)!! as T
@@ -374,47 +333,35 @@ public abstract class KDataStore private constructor(
         )
     }
 
-    protected inline fun <reified T : Serializable> javaSerializable(
+    protected inline fun <reified T : Serializable> javaSerializable(default: T): KReadOnlyProperty<KDataStore, Flow<T>> =
+        FlowDelegate(
+            default = default,
+            getKey = ::stringPreferencesKey,
+            convert = { t -> t.convertToString(cypher) },
+            recover = { src -> src.recoverToSerializable<T>(cypher) },
+        )
+
+    protected inline fun <reified T : Any> ktSerializable(default: T): KReadOnlyProperty<KDataStore, Flow<T>> =
+        //todo: switch to stream when 'Json.encodeToStream' is not experimental.
+        anyWithString(default, Json::encodeToString, Json::decodeFromString)
+
+    protected inline fun <reified T : Any, reified S: Serializable> any(
         default: T,
-        encrypted: Boolean = defaultEncrypted,
-        backup: Boolean = false,
+        noinline convert: (T) -> S,
+        noinline recover: (S) -> T,
     )
     : KReadOnlyProperty<KDataStore, Flow<T>> =
         FlowDelegate(
             default = default,
-            encrypted = encrypted,
-            backup = backup,
-            actualStore = actualStore,
-            backupStore = backupStore,
             getKey = ::stringPreferencesKey,
             convert = { t ->
-                val bos = ByteArrayOutputStream()
-                val oos = ObjectOutputStream(bos)
-                oos.writeObject(t)
-                oos.close()
-                bos.close()
-                val bytes = bos.toByteArray().updateIf({ encrypted }){ encryption!!.encrypt(it) }
-                Base64.encodeToString(bytes, Base64.DEFAULT)
+                val s = convert(t)
+                s.convertToString(cypher)
             },
             recover = { src ->
-                val bytes = Base64.decode(src, Base64.DEFAULT)
-                    .updateIf({ encrypted }){ encryption!!.decrypt(it) }
-
-                val bis = ByteArrayInputStream(bytes)
-                val ois = ObjectInputStream(bis)
-                ois.close()
-                bis.close()
-                ois.readObject() as T
+                src.recoverToSerializable<S>(cypher)
+                .let(recover)
             },
         )
-
-    protected inline fun <reified T : Any> ktSerializable(
-        default: T,
-        encrypted: Boolean = defaultEncrypted,
-        backup: Boolean = false,
-    )
-    : KReadOnlyProperty<KDataStore, Flow<T>> =
-        //todo: switch to stream when 'Json.encodeToStream' is not experimental.
-        any(default, encrypted, backup, Json::encodeToString, Json::decodeFromString)
     //endregion
 }

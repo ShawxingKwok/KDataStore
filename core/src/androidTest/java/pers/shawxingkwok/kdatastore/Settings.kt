@@ -35,32 +35,32 @@ data class Location(val lat: Double, val lng: Double)
 // defaultEncrypted = true,
 
 @RunWith(AndroidJUnit4::class)
-class Settings : KDataStore() {
-    val bool by bool(false, backup = false)
-    val char by char('1', backup = false)
-    val byte by byte(1, backup = true)
-    val short by short(1, backup = true)
-    val int by int(1, backup = true)
-    val long by long(1, backup = true)
-    val float by float(1.0f, backup = true)
-    val double by double(1.0, backup = true)
-    val string by string("1", backup = true)
-    val enum by enum(Language.ENGLISH, backup = true)
-    val ktSerializable by ktSerializable(Location(38.2, 55.3), backup = true)
-    val javaSerializable by javaSerializable(linkedSetOf(1), backup = true)
+class Settings : KDataStore(
+    cypher = Cypher.AES("fa", "Fdq", ivBytes = (1..16).map { it.toByte() }.toByteArray())
+) {
+    val bool by bool(false)
+    val int by int(1)
+    val long by long(1)
+    val float by float(1.0f)
+    val double by double(1.0)
+    val string by string("1")
+    val enum by enum(Language.ENGLISH)
+    val ktSerializable by ktSerializable(Location(38.2, 55.3))
+    val javaSerializable by javaSerializable(linkedSetOf(1))
     val any by any(
         default = 1,
-        backup = true,
         convert = { it.toString() },
         recover = { it.toInt() }
     )
 
-    @OptIn(Delicate::class)
+    @OptIn(DelicateApi::class)
     @Test
-    fun foo(): Unit = runBlocking {
+    fun start(): Unit = runBlocking {
+        reset()
+
         launch {
-            val flow1 = combine(byte, short, int, long) { a, b, c, d -> "$a $b $c $d" }
-            val flow2 = combine(float, double, bool, char) { a, b, c, d -> "$a $b $c $d" }
+            val flow1 = combine(int, long) { a, b -> "$a $b" }
+            val flow2 = combine(float, double, bool) { a, b, c -> "$a $b $c" }
             val flow3 = combine(string, any, enum, ktSerializable, javaSerializable)
             { a, b, c, d, e -> "$a $b $c $d $e" }
 
@@ -76,21 +76,16 @@ class Settings : KDataStore() {
         }
     }
 
-    @OptIn(Delicate::class)
     suspend fun emitTest() {
-        reset()
         MLog("emit")
 
         while (true) {
             delay(500)
-            byte.emit { (it + 1).toByte() }
-            short.emit { (it + 1).toShort() }
             int.emit { it + 1 }
             long.emit { it + 1 }
             float.emit { it + 1 }
             double.emit { it + 1 }
             bool.emit { !it }
-            char.emit { it + 1 }
             string.emit { (it.toLong() + 1).toString() }
             any.emit { it + 1 }
             enum.emit {
@@ -107,14 +102,11 @@ class Settings : KDataStore() {
 
         while (true) {
             delay(500)
-            byte.toss { (it + 1).toByte() }
-            short.toss { (it + 1).toShort() }
             int.toss { it + 1 }
             long.toss { it + 1 }
             float.toss { it + 1 }
             double.toss { it + 1 }
             bool.toss { !it }
-            char.toss { it + 1 }
 
             string.toss { (it.toLong() + 1).toString() }
             any.toss { it + 1 }

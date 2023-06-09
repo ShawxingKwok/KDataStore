@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import pers.shawxingkwok.ktutil.updateIf
 import java.io.IOException
@@ -16,10 +17,6 @@ import kotlin.reflect.KProperty
 @PublishedApi
 internal inline fun <reified T : Any> FlowDelegate(
     default: T,
-    encrypted: Boolean,
-    backup: Boolean,
-    actualStore: DataStore<Preferences>,
-    backupStore: DataStore<Preferences>,
     noinline getKey: (String) -> Preferences.Key<*>,
     noinline convert: ((T) -> String)?,
     noinline recover: ((String) -> T)?,
@@ -28,56 +25,22 @@ internal inline fun <reified T : Any> FlowDelegate(
     object : KReadOnlyProperty<KDataStore, KDataStore.Flow<T>> {
         lateinit var flow: KDataStore.Flow<T>
 
-        suspend fun recoverFromSrc(path: String, src: Any?, key: Preferences.Key<Any>): T {
-            return try {
-                when {
-                    src == null -> default
-                    recover != null -> recover(src as String)
-                    else -> (src as T)
-                }
-            } catch (e: Exception) {
-                if (!backup) {
-                    MLog.e("$path corrupted and the default value $default is used.")
-                    return default
-                }
-
-                try {
-                    val backupSrc = backupStore.data.first()[key]!!
-
-                    val backupValue =
-                        if (recover != null)
-                            recover(backupSrc as String)
-                        else
-                            backupSrc as T
-
-                    MLog.e("$path corrupted and the backup value $backupValue is used.")
-                    actualStore.edit { it[key] = backupSrc }
-                    backupValue
-                } catch (e: Exception) {
-                    actualStore.edit { it -= key }
-                    backupStore.edit { it -= key }
-                    MLog.e("Both $path and ${path}_backup corrupted. The default value $default is used.")
-                    default
-                }
+        fun recoverFromSrc(src: Any?): T =
+            when {
+                src == null -> default
+                recover != null -> recover(src as String)
+                else -> (src as T)
             }
-        }
 
         override fun onDelegate(thisRef: KDataStore, property: KProperty<*>) {
-            val locatedProp = "${thisRef.javaClass.canonicalName}.${property.name}"
-            require(!encrypted || thisRef.encryption != null) {
-                "$locatedProp is encrypted without encryption."
-            }
-
             @Suppress("UNCHECKED_CAST")
             val key = getKey(property.name) as Preferences.Key<Any>
-            thisRef.fixer.keys += key
-            if (backup)
-                thisRef.fixer.backupKeys += key
+            thisRef.keys += key
 
             val data: kotlinx.coroutines.flow.Flow<T> = thisRef.caughtData
                 .map { it[key] }
                 .distinctUntilChanged()
-                .map { recoverFromSrc(locatedProp, it, key) }
+                .map(::recoverFromSrc)
 
             flow = object : KDataStore.Flow<T>(thisRef.handlerScope, default) {
                 override suspend fun collect(collector: FlowCollector<T>) {
@@ -90,13 +53,19 @@ internal inline fun <reified T : Any> FlowDelegate(
                     when (val prefs = thisRef.migratedPrefs ?: thisRef.updatedAllPrefs) {
                         // When IOException occurs, the flow collector wouldn't be activated, which encourages
                         // user to edit again.
-                        null ->
+                        null -> {
                             try {
-                                thisRef.actualStore.edit { it[key] = converted }
-                                if (backup) thisRef.backupStore.edit { it[key] = converted }
-                            }catch (e: IOException){
+                                thisRef.backup.edit { it[key] = converted }
+                            } catch (e: IOException) {
                                 e.printStackTrace()
                             }
+
+                            try {
+                                thisRef.actualStore.edit { it[key] = converted }
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                            }
+                        }
 
                         else -> prefs[key] = converted
                     }
@@ -107,7 +76,7 @@ internal inline fun <reified T : Any> FlowDelegate(
                         null -> transform(first())
                         else -> {
                             val src = prefs[key]
-                            val recovered = recoverFromSrc(locatedProp, src, key)
+                            val recovered = recoverFromSrc(src)
                             transform(recovered)
                         }
                     }

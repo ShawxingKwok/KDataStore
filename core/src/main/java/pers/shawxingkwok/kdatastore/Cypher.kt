@@ -6,7 +6,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
-public interface Encryption {
+public interface Cypher {
     public fun encrypt(data: ByteArray): ByteArray
     public fun decrypt(data: ByteArray): ByteArray
 
@@ -23,7 +23,7 @@ public interface Encryption {
         keyAlgorithm: String = "PBKDF2WithHmacSHA256",
         iterationTimes: Int = 65536,
         keyLength: Int = 256,
-    ) : Encryption {
+    ) : Cypher {
         init {
             require(
                 keyLength == 128
@@ -60,16 +60,3 @@ public interface Encryption {
         override fun decrypt(data: ByteArray): ByteArray = decryptCipher.doFinal(data)
     }
 }
-
-//todo: consider other charset
-@PublishedApi
-internal fun String.encrypt(encryption: Encryption): String =
-    toByteArray()
-        .let(encryption::encrypt)
-        .let { Base64.encodeToString(it, Base64.DEFAULT) }
-
-@PublishedApi
-internal fun String.decrypt(encryption: Encryption): String =
-    Base64.decode(this, Base64.DEFAULT)
-        .let(encryption::decrypt)
-        .let(::String)
