@@ -1,13 +1,11 @@
 package pers.shawxingkwok.kdatastore
 
-import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import pers.shawxingkwok.ktutil.updateIf
 import java.io.IOException
@@ -42,7 +40,7 @@ internal inline fun <reified T : Any> FlowDelegate(
                 .distinctUntilChanged()
                 .map(::recoverFromSrc)
 
-            flow = object : KDataStore.Flow<T>(thisRef.handlerScope, default) {
+            flow = object : KDataStore.Flow<T>(thisRef.castScope, default) {
                 override suspend fun collect(collector: FlowCollector<T>) {
                     data.collect(collector)
                 }

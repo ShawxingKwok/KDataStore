@@ -2,7 +2,6 @@ package pers.shawxingkwok.kdatastore
 
 import android.content.Context
 import android.util.Base64
-import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataMigration
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
@@ -24,7 +23,7 @@ import kotlin.reflect.full.functions
  */
 public abstract class KDataStore(
     private val fileName: String = "settings",
-    @PublishedApi internal val handlerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+    @PublishedApi internal val castScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
     ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     @PublishedApi internal val cypher: Cypher? = null,
 ) {
@@ -45,14 +44,14 @@ public abstract class KDataStore(
         /**
          * Emits [value] in an async way.
          */
-        public fun toss(value: T) {
+        public fun cast(value: T) {
             handlerScope.launch { emit(value) }
         }
 
         /**
          * [transform]s the old value and emits it in an async way.
          */
-        public fun toss(transform: (T) -> T) {
+        public fun cast(transform: (T) -> T) {
             handlerScope.launch { emit(transform) }
         }
     }

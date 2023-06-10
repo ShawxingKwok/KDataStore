@@ -102,20 +102,20 @@ class Settings : KDataStore(
 
         while (true) {
             delay(500)
-            int.toss { it + 1 }
-            long.toss { it + 1 }
-            float.toss { it + 1 }
-            double.toss { it + 1 }
-            bool.toss { !it }
+            int.cast { it + 1 }
+            long.cast { it + 1 }
+            float.cast { it + 1 }
+            double.cast { it + 1 }
+            bool.cast { !it }
 
-            string.toss { (it.toLong() + 1).toString() }
-            any.toss { it + 1 }
-            enum.toss {
+            string.cast { (it.toLong() + 1).toString() }
+            any.cast { it + 1 }
+            enum.cast {
                 val i = Language.values().indexOf(it)
                 Language.values().getOrElse(i + 1) { Language.values().first() }
             }
-            ktSerializable.toss { it.copy(lat = it.lat + 1, lng = it.lng + 1) }
-            javaSerializable.toss { linkedSetOf(it.last() + 1) }
+            ktSerializable.cast { it.copy(lat = it.lat + 1, lng = it.lng + 1) }
+            javaSerializable.cast { linkedSetOf(it.last() + 1) }
         }
     }
 }
