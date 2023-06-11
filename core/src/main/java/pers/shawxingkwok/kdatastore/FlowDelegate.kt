@@ -2,13 +2,11 @@ package pers.shawxingkwok.kdatastore
 
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import pers.shawxingkwok.ktutil.updateIf
 import java.io.IOException
+import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 
 // Use inline to help check cast
@@ -19,69 +17,73 @@ internal inline fun <reified T : Any> FlowDelegate(
     noinline convert: ((T) -> String)?,
     noinline recover: ((String) -> T)?,
 )
-: KReadOnlyProperty<KDataStore, KDataStore.Flow<T>> =
-    object : KReadOnlyProperty<KDataStore, KDataStore.Flow<T>> {
-        lateinit var flow: KDataStore.Flow<T>
-
-        fun recoverFromSrc(src: Any?): T =
-            when {
-                src == null -> default
-                recover != null -> recover(src as String)
-                else -> (src as T)
-            }
+: KReadOnlyProperty<KDataStore, MutableStateFlow<T>> =
+    object : KReadOnlyProperty<KDataStore, MutableStateFlow<T>> {
+        lateinit var flow: MutableStateFlow<T>
 
         override fun onDelegate(thisRef: KDataStore, property: KProperty<*>) {
             @Suppress("UNCHECKED_CAST")
             val key = getKey(property.name) as Preferences.Key<Any>
             thisRef.keys += key
+            val src = thisRef.initialPrefs[key]
 
-            val data: kotlinx.coroutines.flow.Flow<T> = thisRef.caughtData
-                .map { it[key] }
-                .distinctUntilChanged()
-                .map(::recoverFromSrc)
+            val initialValue = when {
+                src == null -> default
+                recover != null -> recover(src as String)
+                else -> (src as T)
+            }
 
-            flow = object : KDataStore.Flow<T>(thisRef.castScope, default) {
-                override suspend fun collect(collector: FlowCollector<T>) {
-                    data.collect(collector)
-                }
+            flow = MutableStateFlow(initialValue)
+            var onStart = true
 
-                override suspend fun emit(value: T) {
-                    val converted = (value as Any).updateIf({ convert != null }){ convert!!(value) }
+            // not writes the initial value to the disk
+            flow.onEach { value ->
+                if (value != initialValue)
+                    onStart = false
 
-                    when (val prefs = thisRef.migratedPrefs ?: thisRef.updatedAllPrefs) {
-                        // When IOException occurs, the flow collector wouldn't be activated, which encourages
-                        // user to edit again.
-                        null -> {
-                            try {
-                                thisRef.backup.edit { it[key] = converted }
-                            } catch (e: IOException) {
-                                MLog(e)
-                            }
+                if (onStart) return@onEach
 
-                            try {
-                                thisRef.actualStore.edit { it[key] = converted }
-                            } catch (e: IOException) {
-                                MLog(e)
-                            }
+                val converted = (value as Any).updateIf({ convert != null }){ convert!!(value) }
+
+                try {
+                    thisRef.frontStore.edit {
+                        it[key] = converted
+                    }
+                } catch (e: IOException) {
+                    try {
+                        val typeName =
+                            if (convert == null &&
+                                T::class in arrayOf<KClass<*>>(
+                                    Int::class, Long::class,
+                                    Float::class, Double::class,
+                                    String::class, Boolean::class
+                                )
+                            )
+                                T::class.simpleName
+                            else
+                                "String"
+
+                        val ioExceptionInfo = "$typeName ${property.name}"
+
+                        thisRef.frontStore.edit {
+                            val newSet = (it[thisRef.ioExceptionRecordsKey] ?: emptySet()) + ioExceptionInfo
+                            it[thisRef.ioExceptionRecordsKey] = newSet
                         }
-
-                        else -> prefs[key] = converted
+                    }catch (e: IOException){
+                        MLog.e(e)
                     }
                 }
 
-                override suspend fun emit(transform: (T) -> T) {
-                    val value = when (val prefs = thisRef.migratedPrefs ?: thisRef.updatedAllPrefs) {
-                        null -> transform(first())
-                        else -> {
-                            val src = prefs[key]
-                            val recovered = recoverFromSrc(src)
-                            transform(recovered)
-                        }
+                try {
+                    thisRef.backupStore.edit {
+                        it[key] = converted
                     }
-                    emit(value)
+                }catch (e: IOException){
+                    MLog.e(e)
                 }
             }
+            .launchIn(thisRef.handlerScope)
         }
 
-         override fun getValue(thisRef: KDataStore, property: KProperty<*>): KDataStore.Flow<T> = flow
+        override fun getValue(thisRef: KDataStore, property: KProperty<*>): MutableStateFlow<T> = flow
     }

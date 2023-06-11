@@ -1,8 +1,6 @@
 package pers.shawxingkwok.kdatastore
 
-import android.content.Context
 import android.util.Base64
-import androidx.datastore.core.DataMigration
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.*
@@ -13,6 +11,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
+import pers.shawxingkwok.ktutil.allDo
 import java.io.*
 import kotlin.reflect.full.functions
 
@@ -23,205 +22,143 @@ import kotlin.reflect.full.functions
  */
 public abstract class KDataStore(
     private val fileName: String = "settings",
-    @PublishedApi internal val castScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+    @PublishedApi internal val handlerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
     ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     @PublishedApi internal val cypher: Cypher? = null,
 ) {
-    //region Flow
-    public abstract class Flow<T : Any> @PublishedApi internal constructor(
-        private val handlerScope: CoroutineScope,
-        public val default: T
-    )
-        : kotlinx.coroutines.flow.Flow<T>
-    {
-        public abstract suspend fun emit(value: T)
-
-        /**
-         * [transform]s the old value and emit it.
-         */
-        public abstract suspend fun emit(transform: (T) -> T)
-
-        /**
-         * Emits [value] in an async way.
-         */
-        public fun cast(value: T) {
-            handlerScope.launch { emit(value) }
-        }
-
-        /**
-         * [transform]s the old value and emits it in an async way.
-         */
-        public fun cast(transform: (T) -> T) {
-            handlerScope.launch { emit(transform) }
-        }
-    }
-    //endregion
-
-    //region fun updateAll
-    @PublishedApi
-    internal var updatedAllPrefs: MutablePreferences? = null
-
-    /**
-     * Only writes once to the disk.
-     *
-     * Note: this is needless in [getMigration].
-     */
-    public suspend fun updateAll(act: suspend () -> Unit) {
-        updatedAllPrefs = actualStore.data.first().toMutablePreferences()
-        act()
-        backup.update(updatedAllPrefs!!)
-        actualStore.updateData { updatedAllPrefs!! }
-        updatedAllPrefs = null
-    }
-    //endregion
-
-    //region migrations
-    @PublishedApi
-    internal var migratedPrefs: MutablePreferences? = null
-
-    protected interface Migration {
-        public suspend fun shouldMigrate(): Boolean
-
-        /**
-         * Migrate from SharedPreferences, DataStore, or other sources, and
-         * call [Flow.emit] with 'value' rather than 'transform'.
-         */
-        public suspend fun migrate()
-
-        public suspend fun cleanUp()
-    }
-
-    protected open fun getMigration(context: Context): Migration =
-        object : Migration {
-            override suspend fun shouldMigrate(): Boolean = false
-            override suspend fun migrate() {}
-            override suspend fun cleanUp() {}
-        }
-
-    private val defaultDataMigration =
-        // here's not safe to use 'getMigration' first.
-        object : DataMigration<Preferences> {
-            lateinit var migration: Migration
-
-            override suspend fun shouldMigrate(currentData: Preferences): Boolean {
-                migration = getMigration(MyInitializer.context)
-                return migration.shouldMigrate()
-            }
-
-            override suspend fun migrate(currentData: Preferences): Preferences {
-                migratedPrefs = currentData.toMutablePreferences()
-                migration.migrate()
-                backup.update(migratedPrefs!!)
-                return migratedPrefs!!
-            }
-
-            override suspend fun cleanUp() {
-                migration.cleanUp()
-                migratedPrefs = null
-            }
-        }
-    //endregion
+    //region frontStore, backupStore
+    private var frontStoreCorrupted = false
+    private var backupStoreCorrupted = false
 
     @PublishedApi
-    internal val keys: MutableSet<Preferences.Key<*>> = mutableSetOf()
-
-    @PublishedApi
-    internal val fixMigration: DataMigration<Preferences> = object : DataMigration<Preferences> {
-
-        lateinit var needlessKeys: Set<Preferences.Key<*>>
-
-        override suspend fun shouldMigrate(currentData: Preferences): Boolean {
-            needlessKeys = currentData.asMap().keys - keys
-            return needlessKeys.any()
-        }
-
-        override suspend fun migrate(currentData: Preferences): Preferences {
-            val prefs = currentData.toMutablePreferences()
-            needlessKeys.forEach { prefs -= it }
-            return prefs
-        }
-
-        override suspend fun cleanUp() {}
-    }
-
-    //region actualStore
-    @PublishedApi
-    internal val actualStore: DataStore<Preferences> =
+    internal val frontStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler {
+                MLog.e("DataStore $fileName corrupted.")
+
+                frontStoreCorrupted = true
+
                 //todo: replace 'runBlocking' with 'suspend' after the official fix
                 runBlocking {
-                    backup.getPreferences()
+                    backupStore.data.first()
                 }
             },
-            migrations = listOf(defaultDataMigration, fixMigration),
+            migrations = emptyList(),
             scope = ioScope,
             produceFile = {
                 MyInitializer.context.preferencesDataStoreFile(fileName)
             }
         )
-    //endregion
 
-    //region backup
     @PublishedApi
-    internal inner class Backup{
-        private val dataStore = PreferenceDataStoreFactory.create(
-            corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
-            migrations = listOf(fixMigration),
-            scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+    internal val backupStore: DataStore<Preferences> =
+        PreferenceDataStoreFactory.create(
+            corruptionHandler = ReplaceFileCorruptionHandler {
+                MLog.e("Backup dataStore $fileName corrupted.")
+                backupStoreCorrupted = true
+                emptyPreferences()
+            },
+            migrations = emptyList(),
+            scope = ioScope,
             produceFile = {
                 MyInitializer.context.preferencesDataStoreFile(fileName + "_backup")
             }
         )
+    //endregion
 
-        private val backupHandlerScope: CoroutineScope =
-            CoroutineScope(Dispatchers.Default + SupervisorJob())
+    //region get initial preferences and fix
+    @PublishedApi
+    internal val keys: MutableSet<Preferences.Key<*>> = mutableSetOf()
 
-        suspend fun getPreferences() = dataStore
-            .data
-            .catch {
-                if (it is IOException)
-                    emit(emptyPreferences())
-                else {
-                    it.printStackTrace()
-                    throw it
-                }
-            }
-            .first()
+    @PublishedApi
+    internal val ioExceptionRecordsKey: Preferences.Key<Set<String>> =
+        stringSetPreferencesKey("ioExceptionRecords$#KDataStore").also { keys += it }
 
-        fun update(preferences: Preferences){
-            backupHandlerScope.launch {
-                try {
-                    dataStore.updateData { preferences }
-                }catch (e: IOException){
-                    MLog(e)
-                }
-            }
+    @PublishedApi
+    internal val initialPrefs: Preferences =
+        runBlocking {
+            frontStore.data.first().toMutablePreferences()
         }
 
-        fun edit(act: suspend (MutablePreferences) -> Unit){
-            backupHandlerScope.launch {
-                try {
-                    dataStore.edit(act)
-                }catch (e: IOException){
-                    MLog(e)
+    // recovers with ioException records
+    // ignores the IOException because reads only once.
+    init {
+        runBlocking{
+            initialPrefs as MutablePreferences
+
+            when{
+                frontStoreCorrupted && backupStoreCorrupted -> {
+                    // used emptyPreferences in corruption
+                    return@runBlocking
                 }
+                frontStoreCorrupted -> {
+                    // used backup preferences in corruption
+                    return@runBlocking
+                }
+                backupStoreCorrupted -> {
+                    // used emptyPreferences in corruption first
+                    // and update with frontPreferences later in this block
+                }
+                else -> {
+                    val ioExceptionKeysInfo = initialPrefs[ioExceptionRecordsKey]
+                    // emptySet is impossible
+                    if (ioExceptionKeysInfo != null) {
+                        val backupPrefs = backupStore.data.first()
+
+                        ioExceptionKeysInfo
+                            .map {
+                                val (typeName, propName) = it.split(" ", limit = 2)
+                                when(typeName){
+                                    "Int" -> intPreferencesKey(propName)
+                                    "Long" -> longPreferencesKey(propName)
+                                    "Float" -> floatPreferencesKey(propName)
+                                    "Double" -> doublePreferencesKey(propName)
+                                    "Bool" -> floatPreferencesKey(propName)
+                                    "String" -> floatPreferencesKey(propName)
+                                    else -> error("")
+                                }
+                            }
+                            .forEach { key ->
+                                @Suppress("UNCHECKED_CAST")
+                                key as Preferences.Key<Any>
+
+                                when (val value = backupPrefs[key]) {
+                                    null -> initialPrefs -= key
+                                    else -> initialPrefs[key] = value
+                                }
+                            }
+                    }
+                }
+            }
+
+            initialPrefs -= ioExceptionRecordsKey
+
+            // update disk asyncly
+            handlerScope.launch {
+                frontStore.updateData { initialPrefs }
+                backupStore.updateData { initialPrefs }
             }
         }
     }
 
-    @PublishedApi
-    internal val backup: Backup = Backup()
-    //endregion
+    // remove needless keys
+    init {
+        handlerScope.launch {
+            delay(1000)
 
-    @PublishedApi
-    internal val caughtData: kotlinx.coroutines.flow.Flow<Preferences> =
-        actualStore.data
-        .catch { tr ->
-            if (tr !is IOException) throw tr
-            tr.printStackTrace()
-            emit(backup.getPreferences())
+            val needlessKeys = initialPrefs.asMap().keys - keys
+            if (needlessKeys.none()) return@launch
+
+            allDo(frontStore, backupStore){ store ->
+                store.edit { prefs ->
+                    needlessKeys.forEach { key ->
+                        prefs -= key
+                    }
+                }
+            }
         }
+    }
+    //endregion
 
     //region delicate functions: reset delete exists
     @RequiresOptIn
@@ -230,8 +167,8 @@ public abstract class KDataStore(
 
     @DelicateApi
     public suspend fun reset() {
-        actualStore.updateData { emptyPreferences() }
-        backup.update(emptyPreferences())
+        frontStore.updateData { emptyPreferences() }
+        backupStore.updateData { emptyPreferences() }
     }
 
     private fun getFile() = File(MyInitializer.context.filesDir, "datastore/$fileName.preferences_pb")
@@ -254,7 +191,7 @@ public abstract class KDataStore(
         noinline getKey: (String) -> Preferences.Key<T>,
         noinline recover: (String) -> T,
     )
-    : KReadOnlyProperty<KDataStore, Flow<T>> =
+    : KReadOnlyProperty<KDataStore, MutableStateFlow<T>> =
         if (cypher == null)
             FlowDelegate(
                 default = default,
@@ -269,22 +206,22 @@ public abstract class KDataStore(
                 recover = recover,
             )
 
-    protected fun int(default: Int): KReadOnlyProperty<KDataStore, Flow<Int>> =
+    protected fun int(default: Int): KReadOnlyProperty<KDataStore, MutableStateFlow<Int>> =
         direct(default, ::intPreferencesKey, String::toInt)
 
-    protected fun long(default: Long): KReadOnlyProperty<KDataStore, Flow<Long>> =
+    protected fun long(default: Long): KReadOnlyProperty<KDataStore, MutableStateFlow<Long>> =
         direct(default, ::longPreferencesKey, String::toLong)
 
-    protected fun float(default: Float): KReadOnlyProperty<KDataStore, Flow<Float>> =
+    protected fun float(default: Float): KReadOnlyProperty<KDataStore, MutableStateFlow<Float>> =
         direct(default, ::floatPreferencesKey, String::toFloat)
 
-    protected fun double(default: Double): KReadOnlyProperty<KDataStore, Flow<Double>> =
+    protected fun double(default: Double): KReadOnlyProperty<KDataStore, MutableStateFlow<Double>> =
         direct(default, ::doublePreferencesKey, String::toDouble)
 
-    protected fun bool(default: Boolean): KReadOnlyProperty<KDataStore, Flow<Boolean>> =
+    protected fun bool(default: Boolean): KReadOnlyProperty<KDataStore, MutableStateFlow<Boolean>> =
         direct(default, ::booleanPreferencesKey, String::toBoolean)
 
-    protected fun string(default: String): KReadOnlyProperty<KDataStore, Flow<String>> =
+    protected fun string(default: String): KReadOnlyProperty<KDataStore, MutableStateFlow<String>> =
         direct(default, ::stringPreferencesKey) { it }
     //endregion
 
@@ -295,7 +232,7 @@ public abstract class KDataStore(
         noinline convert: (T) -> String,
         noinline recover: (String) -> T,
     )
-    : KReadOnlyProperty<KDataStore, Flow<T>> =
+    : KReadOnlyProperty<KDataStore, MutableStateFlow<T>> =
         FlowDelegate(
             default = default,
             getKey = ::stringPreferencesKey,
@@ -320,7 +257,7 @@ public abstract class KDataStore(
                     recover,
         )
 
-    protected inline fun <reified T : Enum<T>> enum(default: T): KReadOnlyProperty<KDataStore, Flow<T>> {
+    protected inline fun <reified T : Enum<T>> enum(default: T): KReadOnlyProperty<KDataStore, MutableStateFlow<T>> {
         val valueOf = default::class.functions.first { it.name == "valueOf" }
 
         return anyWithString(
@@ -332,7 +269,7 @@ public abstract class KDataStore(
         )
     }
 
-    protected inline fun <reified T : Serializable> javaSerializable(default: T): KReadOnlyProperty<KDataStore, Flow<T>> =
+    protected inline fun <reified T : Serializable> javaSerializable(default: T): KReadOnlyProperty<KDataStore, MutableStateFlow<T>> =
         FlowDelegate(
             default = default,
             getKey = ::stringPreferencesKey,
@@ -340,7 +277,7 @@ public abstract class KDataStore(
             recover = { src -> src.recoverToSerializable<T>(cypher) },
         )
 
-    protected inline fun <reified T : Any> ktSerializable(default: T): KReadOnlyProperty<KDataStore, Flow<T>> =
+    protected inline fun <reified T : Any> ktSerializable(default: T): KReadOnlyProperty<KDataStore, MutableStateFlow<T>> =
         //todo: switch to stream when 'Json.encodeToStream' is not experimental.
         anyWithString(default, Json::encodeToString, Json::decodeFromString)
 
@@ -349,7 +286,7 @@ public abstract class KDataStore(
         noinline convert: (T) -> S,
         noinline recover: (S) -> T,
     )
-    : KReadOnlyProperty<KDataStore, Flow<T>> =
+    : KReadOnlyProperty<KDataStore, MutableStateFlow<T>> =
         FlowDelegate(
             default = default,
             getKey = ::stringPreferencesKey,

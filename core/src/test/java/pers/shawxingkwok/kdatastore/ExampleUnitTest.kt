@@ -19,6 +19,25 @@ import kotlin.reflect.KMutableProperty
 class ExampleUnitTest {
     @Test
     fun foo(){
-        val src = MutableStateFlow(1)
+        val flowDelegate = MutableStateFlow(1)
+
+        val flow = object : MutableStateFlow<Int> by flowDelegate{
+            override var value: Int = flowDelegate.value
+                get() = flowDelegate.value
+                set(value) {
+                    if (field == value) return
+
+                    field = value
+                    flowDelegate.value = value
+                    println("emitted $value")
+                }
+
+        }
+
+        runBlocking {
+            println("emitting")
+            flow.emit(2)
+            flow.value++
+        }
     }
 }

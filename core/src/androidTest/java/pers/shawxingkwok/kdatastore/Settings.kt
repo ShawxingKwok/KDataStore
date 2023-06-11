@@ -7,6 +7,7 @@ package pers.shawxingkwok.kdatastore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
 import org.junit.Assert.*
 import org.junit.Test
@@ -67,53 +68,28 @@ class Settings : KDataStore(
         }
 
         launch {
-            emitTest()
-        }
-        launch {
-           tossTest()
+            updateFlow()
         }
     }
 
-    suspend fun emitTest() {
+    suspend fun updateFlow() {
         MLog("emit")
 
         while (true) {
             delay(500)
-            int.emit { it + 1 }
-            long.emit { it + 1 }
-            float.emit { it + 1 }
-            double.emit { it + 1 }
-            bool.emit { !it }
-            string.emit { (it.toLong() + 1).toString() }
-            any.emit { it + 1 }
-            enum.emit {
+            int.value++
+            long.value++
+            float.value++
+            double.value++
+            bool.update { !it }
+            string.update { (it.toLong() + 1).toString() }
+            any.update { it + 1 }
+            enum.update {
                 val i = Language.values().indexOf(it)
                 Language.values().getOrElse(i + 1) { Language.values().first() }
             }
-            ktSerializable.emit { it.copy(lat = it.lat + 1, lng = it.lng + 1) }
-            javaSerializable.emit { linkedSetOf(it.last() + 1) }
-        }
-    }
-
-    suspend fun tossTest() {
-        MLog("toss")
-
-        while (true) {
-            delay(500)
-            int.cast { it + 1 }
-            long.cast { it + 1 }
-            float.cast { it + 1 }
-            double.cast { it + 1 }
-            bool.cast { !it }
-
-            string.cast { (it.toLong() + 1).toString() }
-            any.cast { it + 1 }
-            enum.cast {
-                val i = Language.values().indexOf(it)
-                Language.values().getOrElse(i + 1) { Language.values().first() }
-            }
-            ktSerializable.cast { it.copy(lat = it.lat + 1, lng = it.lng + 1) }
-            javaSerializable.cast { linkedSetOf(it.last() + 1) }
+            ktSerializable.update { it.copy(lat = it.lat + 1, lng = it.lng + 1) }
+            javaSerializable.update { linkedSetOf(it.last() + 1) }
         }
     }
 }
