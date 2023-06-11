@@ -20,7 +20,7 @@ internal class MigrationTest : KDataStore(){
     }
 
     val isVip by bool(false)
-    val name by string("Jack", backup = true)
+    val name by string("Jack")
 
     override fun getMigration(context: Context) = object : Migration {
         val sp = context.getSharedPreferences("settings", Context.MODE_PRIVATE)

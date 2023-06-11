@@ -69,8 +69,8 @@ public abstract class KDataStore(
     public suspend fun updateAll(act: suspend () -> Unit) {
         updatedAllPrefs = actualStore.data.first().toMutablePreferences()
         act()
-        actualStore.updateData { updatedAllPrefs!! }
         backup.update(updatedAllPrefs!!)
+        actualStore.updateData { updatedAllPrefs!! }
         updatedAllPrefs = null
     }
     //endregion
@@ -194,7 +194,7 @@ public abstract class KDataStore(
                 try {
                     dataStore.updateData { preferences }
                 }catch (e: IOException){
-                    e.printStackTrace()
+                    MLog(e)
                 }
             }
         }
@@ -204,7 +204,7 @@ public abstract class KDataStore(
                 try {
                     dataStore.edit(act)
                 }catch (e: IOException){
-                    e.printStackTrace()
+                    MLog(e)
                 }
             }
         }

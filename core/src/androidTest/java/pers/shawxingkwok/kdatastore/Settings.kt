@@ -56,8 +56,6 @@ class Settings : KDataStore(
     @OptIn(DelicateApi::class)
     @Test
     fun start(): Unit = runBlocking {
-        reset()
-
         launch {
             val flow1 = combine(int, long) { a, b -> "$a $b" }
             val flow2 = combine(float, double, bool) { a, b, c -> "$a $b $c" }

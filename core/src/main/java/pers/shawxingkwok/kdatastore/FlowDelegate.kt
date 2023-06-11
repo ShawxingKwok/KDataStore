@@ -55,13 +55,13 @@ internal inline fun <reified T : Any> FlowDelegate(
                             try {
                                 thisRef.backup.edit { it[key] = converted }
                             } catch (e: IOException) {
-                                e.printStackTrace()
+                                MLog(e)
                             }
 
                             try {
                                 thisRef.actualStore.edit { it[key] = converted }
                             } catch (e: IOException) {
-                                e.printStackTrace()
+                                MLog(e)
                             }
                         }
 
