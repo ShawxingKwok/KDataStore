@@ -4,6 +4,7 @@
 
 package pers.shawxingkwok.kdatastore
 
+import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.combine
@@ -12,6 +13,7 @@ import kotlinx.serialization.Serializable
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 
 enum class Language {
     ENGLISH, GERMAN, SPANISH
@@ -37,6 +39,7 @@ data class Location(val lat: Double, val lng: Double)
 
 @RunWith(AndroidJUnit4::class)
 class Settings : KDataStore(
+    fileName = "settings",
     cypher = Cypher.AES("fa", "Fdq", ivBytes = (1..16).map { it.toByte() }.toByteArray())
 ) {
     val bool by bool(false)
@@ -54,6 +57,22 @@ class Settings : KDataStore(
         recover = { it.toInt() }
     )
 
+    val isVip by bool(false)
+    val name by string("Jack")
+
+    init {
+        if (MigrationTest.exists()) {
+            isVip.value = MigrationTest.isVip.value
+            name.value = MigrationTest.name.value
+            MLog("on Migration")
+            @OptIn(DelicateApi::class)
+            MigrationTest.delete()
+        }else
+            MLog("Already migrated")
+
+        MLog(isVip.value, name.value)
+    }
+
     @OptIn(DelicateApi::class)
     @Test
     fun start(): Unit = runBlocking {
@@ -67,15 +86,9 @@ class Settings : KDataStore(
                 .collect { MLog(it) }
         }
 
-        launch {
-            updateFlow()
-        }
-    }
-
-    suspend fun updateFlow() {
         MLog("emit")
 
-        while (true) {
+        repeat (4) {
             delay(500)
             int.value++
             long.value++

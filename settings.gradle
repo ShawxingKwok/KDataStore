@@ -16,4 +16,3 @@ dependencyResolutionManagement {
 }
 rootProject.name = "KDataStore"
 include ':core'
-include ':compose'

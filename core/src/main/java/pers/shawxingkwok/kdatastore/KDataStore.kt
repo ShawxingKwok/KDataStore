@@ -1,9 +1,11 @@
 package pers.shawxingkwok.kdatastore
 
+import android.content.Context
 import android.util.Base64
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.*
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -21,33 +23,31 @@ import kotlin.reflect.full.functions
  * See [tutorial](https://shawxingkwok.github.io/ITWorks/docs/kdatastore/).
  */
 public abstract class KDataStore(
-    private val fileName: String = "settings",
+    private val fileName: String,
+    @PublishedApi internal val cypher: Cypher? = null,
     @PublishedApi internal val handlerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
     ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-    @PublishedApi internal val cypher: Cypher? = null,
 ) {
-    //region frontStore, backupStore
-    private var frontStoreCorrupted = false
-    private var backupStoreCorrupted = false
+    public interface Flow<T> : MutableStateFlow<T>{
+        public fun reset()
+    }
 
+    @PublishedApi
+    internal val flows: MutableList<Flow<*>> = mutableListOf()
+
+    protected val context: Context = MyInitializer.context
+
+    //region frontStore, backupStore
     @PublishedApi
     internal val frontStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler {
                 MLog.e("DataStore $fileName corrupted.")
-
-                frontStoreCorrupted = true
-
-                //todo: replace 'runBlocking' with 'suspend' after the official fix
-                runBlocking {
-                    backupStore.data.first()
-                }
+                emptyPreferences()
             },
             migrations = emptyList(),
             scope = ioScope,
-            produceFile = {
-                MyInitializer.context.preferencesDataStoreFile(fileName)
-            }
+            produceFile = { context.preferencesDataStoreFile(fileName) }
         )
 
     @PublishedApi
@@ -55,7 +55,6 @@ public abstract class KDataStore(
         PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler {
                 MLog.e("Backup dataStore $fileName corrupted.")
-                backupStoreCorrupted = true
                 emptyPreferences()
             },
             migrations = emptyList(),
@@ -70,78 +69,64 @@ public abstract class KDataStore(
     @PublishedApi
     internal val keys: MutableSet<Preferences.Key<*>> = mutableSetOf()
 
+    // only saved in backup store, because if you write again at once when IOException occurs, IOException
+    // would probably occur again.
     @PublishedApi
     internal val ioExceptionRecordsKey: Preferences.Key<Set<String>> =
         stringSetPreferencesKey("ioExceptionRecords$#KDataStore").also { keys += it }
 
+    // recovers with ioException records
+    // ignores the IOException because reads only once.
     @PublishedApi
     internal val initialPrefs: Preferences =
         runBlocking {
-            frontStore.data.first().toMutablePreferences()
-        }
+            val frontPrefs = frontStore.data.first().toMutablePreferences()
+            val backupPrefs = backupStore.data.first().toMutablePreferences()
 
-    // recovers with ioException records
-    // ignores the IOException because reads only once.
-    init {
-        runBlocking{
-            initialPrefs as MutablePreferences
+            if (frontPrefs.asMap().none()) {
+                backupPrefs -= ioExceptionRecordsKey
+                return@runBlocking backupPrefs
+            }
 
-            when{
-                frontStoreCorrupted && backupStoreCorrupted -> {
-                    // used emptyPreferences in corruption
-                    return@runBlocking
-                }
-                frontStoreCorrupted -> {
-                    // used backup preferences in corruption
-                    return@runBlocking
-                }
-                backupStoreCorrupted -> {
-                    // used emptyPreferences in corruption first
-                    // and update with frontPreferences later in this block
-                }
-                else -> {
-                    val ioExceptionKeysInfo = initialPrefs[ioExceptionRecordsKey]
-                    // emptySet is impossible
-                    if (ioExceptionKeysInfo != null) {
-                        val backupPrefs = backupStore.data.first()
+            if (backupPrefs.asMap().none())
+                return@runBlocking emptyPreferences()
 
-                        ioExceptionKeysInfo
-                            .map {
-                                val (typeName, propName) = it.split(" ", limit = 2)
-                                when(typeName){
-                                    "Int" -> intPreferencesKey(propName)
-                                    "Long" -> longPreferencesKey(propName)
-                                    "Float" -> floatPreferencesKey(propName)
-                                    "Double" -> doublePreferencesKey(propName)
-                                    "Bool" -> floatPreferencesKey(propName)
-                                    "String" -> floatPreferencesKey(propName)
-                                    else -> error("")
-                                }
-                            }
-                            .forEach { key ->
-                                @Suppress("UNCHECKED_CAST")
-                                key as Preferences.Key<Any>
+            backupPrefs[ioExceptionRecordsKey]
+                ?.map {
+                    val (typeName, propName) = it.split(" ", limit = 2)
 
-                                when (val value = backupPrefs[key]) {
-                                    null -> initialPrefs -= key
-                                    else -> initialPrefs[key] = value
-                                }
-                            }
+                    when (typeName) {
+                        "Int" -> intPreferencesKey(propName)
+                        "Long" -> longPreferencesKey(propName)
+                        "Float" -> floatPreferencesKey(propName)
+                        "Double" -> doublePreferencesKey(propName)
+                        "Bool" -> floatPreferencesKey(propName)
+                        "String" -> floatPreferencesKey(propName)
+                        else -> error("")
                     }
                 }
-            }
+                ?.forEach { key ->
+                    @Suppress("UNCHECKED_CAST")
+                    key as Preferences.Key<Any>
 
-            initialPrefs -= ioExceptionRecordsKey
+                    when (val value = backupPrefs[key]) {
+                        null -> frontPrefs -= key
+                        else -> frontPrefs[key] = value
+                    }
+                }
 
-            // update disk asyncly
-            handlerScope.launch {
-                frontStore.updateData { initialPrefs }
-                backupStore.updateData { initialPrefs }
-            }
+            frontPrefs
+        }
+
+    // update disk asyncly
+    init {
+        handlerScope.launch {
+            frontStore.updateData { initialPrefs }
+            backupStore.updateData { initialPrefs }
         }
     }
 
-    // remove needless keys
+    // remove needless keys later
     init {
         handlerScope.launch {
             delay(1000)
@@ -166,32 +151,27 @@ public abstract class KDataStore(
     public annotation class DelicateApi
 
     @DelicateApi
-    public suspend fun reset() {
-        frontStore.updateData { emptyPreferences() }
-        backupStore.updateData { emptyPreferences() }
+    public fun reset() {
+        flows.forEach { it.reset() }
     }
 
-    private fun getFile() = File(MyInitializer.context.filesDir, "datastore/$fileName.preferences_pb")
-    private fun getBackupFile() = File(MyInitializer.context.filesDir, "datastore/${fileName}_backup.preferences_pb")
-
     @DelicateApi
-    public fun delete(): Boolean {
-        return getFile().delete() && getBackupFile().delete()
+    public fun delete() {
+        context.preferencesDataStoreFile(fileName).delete()
+        context.preferencesDataStoreFile(fileName + "_backup").delete()
     }
 
     // todo: consider about 'getBackupFile().exists()'
-    public fun exists(): Boolean {
-        return getFile().exists()
-    }
+    public fun exists(): Boolean = context.preferencesDataStoreFile(fileName).exists()
     //endregion
 
     //region direct delegates
-    private inline fun <reified T : Any> KDataStore.direct(
+    private inline fun <reified T> KDataStore.direct(
         default: T,
-        noinline getKey: (String) -> Preferences.Key<T>,
-        noinline recover: (String) -> T,
+        noinline getKey: (String) -> Preferences.Key<T & Any>,
+        noinline recover: (String) -> T & Any,
     )
-    : KReadOnlyProperty<KDataStore, MutableStateFlow<T>> =
+    : KReadOnlyProperty<KDataStore, Flow<T>> =
         if (cypher == null)
             FlowDelegate(
                 default = default,
@@ -200,45 +180,63 @@ public abstract class KDataStore(
                 recover = null,
             )
         else
-            anyWithString(
+            anyWithString<T>(
                 default = default,
                 convert = Any::toString,
                 recover = recover,
             )
 
-    protected fun int(default: Int): KReadOnlyProperty<KDataStore, MutableStateFlow<Int>> =
+    protected fun int(default: Int): KReadOnlyProperty<KDataStore, Flow<Int>> =
         direct(default, ::intPreferencesKey, String::toInt)
 
-    protected fun long(default: Long): KReadOnlyProperty<KDataStore, MutableStateFlow<Long>> =
+    protected fun nullableInt(): KReadOnlyProperty<KDataStore, Flow<Int?>> =
+        direct(null, ::intPreferencesKey, String::toInt)
+
+    protected fun long(default: Long): KReadOnlyProperty<KDataStore, Flow<Long>> =
         direct(default, ::longPreferencesKey, String::toLong)
 
-    protected fun float(default: Float): KReadOnlyProperty<KDataStore, MutableStateFlow<Float>> =
+    protected fun nullableLong(): KReadOnlyProperty<KDataStore, Flow<Long?>> =
+        direct(null, ::longPreferencesKey, String::toLong)
+
+    protected fun float(default: Float): KReadOnlyProperty<KDataStore, Flow<Float>> =
         direct(default, ::floatPreferencesKey, String::toFloat)
 
-    protected fun double(default: Double): KReadOnlyProperty<KDataStore, MutableStateFlow<Double>> =
+    protected fun nullableFloat(): KReadOnlyProperty<KDataStore, Flow<Float?>> =
+        direct(null, ::floatPreferencesKey, String::toFloat)
+
+    protected fun double(default: Double): KReadOnlyProperty<KDataStore, Flow<Double>> =
         direct(default, ::doublePreferencesKey, String::toDouble)
 
-    protected fun bool(default: Boolean): KReadOnlyProperty<KDataStore, MutableStateFlow<Boolean>> =
+    protected fun nullableDouble(): KReadOnlyProperty<KDataStore, Flow<Double?>> =
+        direct(null, ::doublePreferencesKey, String::toDouble)
+
+    protected fun bool(default: Boolean): KReadOnlyProperty<KDataStore, Flow<Boolean>> =
         direct(default, ::booleanPreferencesKey, String::toBoolean)
 
-    protected fun string(default: String): KReadOnlyProperty<KDataStore, MutableStateFlow<String>> =
+    protected fun nullableBool(): KReadOnlyProperty<KDataStore, Flow<Boolean?>> =
+        direct(null, ::booleanPreferencesKey, String::toBoolean)
+
+    protected fun string(default: String): KReadOnlyProperty<KDataStore, Flow<String>> =
         direct(default, ::stringPreferencesKey) { it }
+
+    protected fun nullableString(): KReadOnlyProperty<KDataStore, Flow<String?>> =
+        direct(null, ::stringPreferencesKey) { it }
     //endregion
 
     //region converted delegates
     @PublishedApi
-    internal inline fun <reified T : Any> KDataStore.anyWithString(
+    internal inline fun <reified T> KDataStore.anyWithString(
         default: T,
-        noinline convert: (T) -> String,
-        noinline recover: (String) -> T,
+        noinline convert: (T & Any) -> String,
+        noinline recover: (String) -> T & Any,
     )
-    : KReadOnlyProperty<KDataStore, MutableStateFlow<T>> =
-        FlowDelegate(
+    : KReadOnlyProperty<KDataStore, Flow<T>> =
+        FlowDelegate<T>(
             default = default,
             getKey = ::stringPreferencesKey,
             convert =
                 if (cypher != null)
-                    { t: T ->
+                    { t ->
                         convert(t)
                         .toByteArray()
                         .let(cypher::encrypt)
@@ -257,10 +255,10 @@ public abstract class KDataStore(
                     recover,
         )
 
-    protected inline fun <reified T : Enum<T>> enum(default: T): KReadOnlyProperty<KDataStore, MutableStateFlow<T>> {
-        val valueOf = default::class.functions.first { it.name == "valueOf" }
+    protected inline fun <reified T : Enum<T>> enum(default: T): KReadOnlyProperty<KDataStore, Flow<T>> {
+        val valueOf = T::class.functions.first { it.name == "valueOf" }
 
-        return anyWithString(
+        return anyWithString<T>(
             default = default,
             convert = Any::toString,
             recover = {
@@ -269,26 +267,68 @@ public abstract class KDataStore(
         )
     }
 
-    protected inline fun <reified T : Serializable> javaSerializable(default: T): KReadOnlyProperty<KDataStore, MutableStateFlow<T>> =
-        FlowDelegate(
+    protected inline fun <reified T : Enum<T>> nullableEnum(): KReadOnlyProperty<KDataStore, Flow<T?>> {
+        val valueOf = T::class.functions.first { it.name == "valueOf" }
+
+        return anyWithString<T?>(
+            default = null,
+            convert = Any::toString,
+            recover = {
+                valueOf.call(it)!! as T
+            }
+        )
+    }
+
+    protected inline fun <reified T : Serializable> javaSerializable(default: T): KReadOnlyProperty<KDataStore, Flow<T>> =
+        FlowDelegate<T>(
             default = default,
             getKey = ::stringPreferencesKey,
             convert = { t -> t.convertToString(cypher) },
-            recover = { src -> src.recoverToSerializable<T>(cypher) },
+            recover = { src -> src.recoverToSerializable(cypher) },
         )
 
-    protected inline fun <reified T : Any> ktSerializable(default: T): KReadOnlyProperty<KDataStore, MutableStateFlow<T>> =
+    protected inline fun <reified T : Serializable> nullableJavaSerializable(): KReadOnlyProperty<KDataStore, Flow<T?>> =
+        FlowDelegate<T?>(
+            default = null,
+            getKey = ::stringPreferencesKey,
+            convert = { t -> t.convertToString(cypher) },
+            recover = { src -> src.recoverToSerializable(cypher) },
+        )
+
+    protected inline fun <reified T: Any> ktSerializable(default: T): KReadOnlyProperty<KDataStore, Flow<T>> =
         //todo: switch to stream when 'Json.encodeToStream' is not experimental.
         anyWithString(default, Json::encodeToString, Json::decodeFromString)
 
-    protected inline fun <reified T : Any, reified S: Serializable> any(
+    protected inline fun <reified T: Any> nullableKtSerializable(): KReadOnlyProperty<KDataStore, Flow<T?>> =
+        //todo: switch to stream when 'Json.encodeToStream' is not experimental.
+        anyWithString<T?>(null, Json::encodeToString, Json::decodeFromString)
+
+    protected inline fun <reified T: Any, reified S: Serializable> any(
         default: T,
         noinline convert: (T) -> S,
         noinline recover: (S) -> T,
     )
-    : KReadOnlyProperty<KDataStore, MutableStateFlow<T>> =
-        FlowDelegate(
+    : KReadOnlyProperty<KDataStore, Flow<T>> =
+        FlowDelegate<T>(
             default = default,
+            getKey = ::stringPreferencesKey,
+            convert = { t ->
+                val s = convert(t)
+                s.convertToString(cypher)
+            },
+            recover = { src ->
+                src.recoverToSerializable<S>(cypher)
+                .let(recover)
+            },
+        )
+
+    protected inline fun <reified T: Any, reified S: Serializable> nullableAny(
+        noinline convert: (T) -> S,
+        noinline recover: (S) -> T,
+    )
+    : KReadOnlyProperty<KDataStore, Flow<T?>> =
+        FlowDelegate<T?>(
+            default = null,
             getKey = ::stringPreferencesKey,
             convert = { t ->
                 val s = convert(t)

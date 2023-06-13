@@ -7,20 +7,22 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.scheduling.DefaultIoScheduler.default
 import pers.shawxingkwok.kdatastore.KDataStore
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 @Composable
-public fun <T: Any> KDataStore.Flow<T>.collectAsDefaultState(
+public fun <T: Any> MutableStateFlow<T>.collectAsDefaultState(
     context: CoroutineContext = EmptyCoroutineContext
 ): State<T> =
-    collectAsState(default, context)
+    collectAsState()
 
 @Composable
-public fun <T: Any> KDataStore.Flow<T>.collectAsDefaultStateWithLifecycle(
+public fun <T: Any> MutableStateFlow<T>.collectAsDefaultStateWithLifecycle(
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
     minActiveState: Lifecycle.State = Lifecycle.State.STARTED,
     context: CoroutineContext = EmptyCoroutineContext,
 ): State<T> =
-    collectAsStateWithLifecycle(default, lifecycleOwner, minActiveState, context)
+    collectAsStateWithLifecycle(lifecycleOwner, minActiveState, context)
