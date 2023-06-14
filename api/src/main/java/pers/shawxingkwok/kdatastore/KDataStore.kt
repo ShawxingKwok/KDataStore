@@ -5,8 +5,8 @@ import android.util.Base64
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.*
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
+import androidx.lifecycle.LiveData
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.decodeFromString
@@ -23,19 +23,34 @@ import kotlin.reflect.full.functions
  * See [tutorial](https://shawxingkwok.github.io/ITWorks/docs/kdatastore/).
  */
 public abstract class KDataStore(
-    private val fileName: String,
+    @PublishedApi internal val fileName: String,
     @PublishedApi internal val cypher: Cypher? = null,
     @PublishedApi internal val handlerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
     ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
     public interface Flow<T> : MutableStateFlow<T>{
         public fun reset()
+
+        /**
+         * Returns the only one converted [LiveData].
+         */
+        public val liveData: LiveData<T>
     }
 
     @PublishedApi
     internal val flows: MutableList<Flow<*>> = mutableListOf()
 
     protected val context: Context = MyInitializer.context
+
+    //region getFile, getBackupFile
+    private fun getFile(): File {
+        return context.preferencesDataStoreFile(fileName)
+    }
+
+    private fun getBackupFile(): File {
+        return context.preferencesDataStoreFile("${fileName}_backup")
+    }
+    //endregion
 
     //region frontStore, backupStore
     @PublishedApi
@@ -47,7 +62,7 @@ public abstract class KDataStore(
             },
             migrations = emptyList(),
             scope = ioScope,
-            produceFile = { context.preferencesDataStoreFile(fileName) }
+            produceFile = ::getFile,
         )
 
     @PublishedApi
@@ -59,9 +74,7 @@ public abstract class KDataStore(
             },
             migrations = emptyList(),
             scope = ioScope,
-            produceFile = {
-                MyInitializer.context.preferencesDataStoreFile(fileName + "_backup")
-            }
+            produceFile = ::getBackupFile,
         )
     //endregion
 
@@ -80,8 +93,16 @@ public abstract class KDataStore(
     @PublishedApi
     internal val initialPrefs: Preferences =
         runBlocking {
-            val frontPrefs = frontStore.data.first().toMutablePreferences()
-            val backupPrefs = backupStore.data.first().toMutablePreferences()
+            val (frontPrefs, backupPrefs) =
+                listOf(frontStore, backupStore)
+                .map {
+                    try {
+                        it.data.first()
+                    } catch (e: IOException) {
+                        emptyPreferences()
+                    }
+                    .toMutablePreferences()
+                }
 
             if (frontPrefs.asMap().none()) {
                 backupPrefs -= ioExceptionRecordsKey
@@ -157,12 +178,12 @@ public abstract class KDataStore(
 
     @DelicateApi
     public fun delete() {
-        context.preferencesDataStoreFile(fileName).delete()
-        context.preferencesDataStoreFile(fileName + "_backup").delete()
+        getFile().delete()
+        getBackupFile().delete()
     }
 
     // todo: consider about 'getBackupFile().exists()'
-    public fun exists(): Boolean = context.preferencesDataStoreFile(fileName).exists()
+    public fun exists(): Boolean = getFile().exists()
     //endregion
 
     //region direct delegates
@@ -303,6 +324,9 @@ public abstract class KDataStore(
         //todo: switch to stream when 'Json.encodeToStream' is not experimental.
         anyWithString<T?>(null, Json::encodeToString, Json::decodeFromString)
 
+    /**
+     * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [Serializable];
+     */
     protected inline fun <reified T: Any, reified S: Serializable> any(
         default: T,
         noinline convert: (T) -> S,
@@ -322,6 +346,9 @@ public abstract class KDataStore(
             },
         )
 
+    /**
+     * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [Serializable];
+     */
     protected inline fun <reified T: Any, reified S: Serializable> nullableAny(
         noinline convert: (T) -> S,
         noinline recover: (S) -> T,

@@ -3,8 +3,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
-    id 'kotlinx-serialization'
-    id "com.vanniktech.maven.publish"
 }
 
 android {
@@ -34,8 +32,10 @@ android {
     }
 }
 
-// test
 dependencies {
+    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.9.0'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
@@ -46,10 +46,8 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
     implementation 'io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT'
     implementation 'io.github.shawxingkwok:android-util:1.0.0-SNAPSHOT'
-    implementation 'androidx.core:core-ktx:1.10.1'
     //noinspection GradleDependency
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kt_version"
-
     implementation "androidx.datastore:datastore-preferences:1.0.0"
     implementation "androidx.startup:startup-runtime:1.1.1"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
@@ -59,12 +57,6 @@ tasks.withType(KotlinCompile).configureEach{
     kotlinOptions.freeCompilerArgs += "-Xexplicit-api=warning"
 }
 
-// publish
-mavenPublishing {
-    coordinates("io.github.shawxingkwok", "android-kdatastore", "1.0.0-SNAPSHOT")
-    pom {
-        name = "KDatastore"
-        description = "A data store extension with little configuration, easy encryption and extensive supported types."
-        inceptionYear = "2023"
-    }
+dependencies {
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.6.1' // 请检查最新版本
 }

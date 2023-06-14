@@ -1,14 +1,12 @@
 package pers.shawxingkwok.kdatastore
 
-import android.icu.text.ListFormatter
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.asLiveData
 import kotlinx.coroutines.flow.*
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
-import pers.shawxingkwok.ktutil.allDo
-import pers.shawxingkwok.ktutil.updateIf
 import java.io.IOException
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
@@ -37,10 +35,14 @@ internal inline fun <reified T> FlowDelegate(
                 else -> (src as T)
             }
 
-            flow = object : KDataStore.Flow<T>, MutableStateFlow<T> by MutableStateFlow(initialValue){
+            val stateFlowDelegate = MutableStateFlow(initialValue)
+
+            flow = object : KDataStore.Flow<T>, MutableStateFlow<T> by stateFlowDelegate{
                 override fun reset() {
                     value = default
                 }
+
+                override val liveData: LiveData<T> by lazy { stateFlowDelegate.asLiveData() }
             }
 
             thisRef.flows += flow
@@ -74,6 +76,11 @@ internal inline fun <reified T> FlowDelegate(
                 try {
                     save(thisRef.frontStore, converted)
                 } catch (e: IOException) {
+                    MLog.e(
+                        "Encounters IOException when writing data to dataStore ${thisRef.fileName}.",
+                        tr = e
+                    )
+
                     try {
                         val typeName =
                             if (convert == null &&
@@ -94,7 +101,10 @@ internal inline fun <reified T> FlowDelegate(
                             it[thisRef.ioExceptionRecordsKey] = oldSet + ioExceptionInfo
                         }
                     }catch (e: IOException){
-                        MLog.e(e)
+                        MLog.e(
+                            "Encounters IOException when writing data to backup dataStore ${thisRef.fileName}.",
+                            tr = e
+                        )
                     }
                 }
 
