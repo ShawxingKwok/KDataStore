@@ -40,15 +40,15 @@ public abstract class KDataStore(
     @PublishedApi
     internal val flows: MutableList<Flow<*>> = mutableListOf()
 
-    protected val context: Context = MyInitializer.context
+    protected val appContext: Context = MyInitializer.context
 
     //region getFile, getBackupFile
     private fun getFile(): File {
-        return context.preferencesDataStoreFile(fileName)
+        return appContext.preferencesDataStoreFile(fileName)
     }
 
     private fun getBackupFile(): File {
-        return context.preferencesDataStoreFile("${fileName}_backup")
+        return appContext.preferencesDataStoreFile("${fileName}_backup")
     }
     //endregion
 
