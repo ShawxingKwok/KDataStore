@@ -11,6 +11,13 @@ import java.io.IOException
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 
+@PublishedApi
+internal val directKClasses: List<KClass<*>> = listOf(
+    Int::class, Long::class,
+    Float::class, Double::class,
+    String::class, Boolean::class
+)
+
 // Use inline to help check cast
 @PublishedApi
 internal inline fun <reified T> FlowDelegate(
@@ -42,7 +49,9 @@ internal inline fun <reified T> FlowDelegate(
                     value = default
                 }
 
-                override val liveData: LiveData<T> by lazy { stateFlowDelegate.asLiveData() }
+                override val liveData: LiveData<T> by lazy(mode = LazyThreadSafetyMode.PUBLICATION) {
+                    stateFlowDelegate.asLiveData()
+                }
             }
 
             thisRef.flows += flow
@@ -73,45 +82,31 @@ internal inline fun <reified T> FlowDelegate(
                         else -> value
                     }
 
+                val errMsg = "Encounters IOException when writing data to dataStore ${thisRef.fileName}."
+
                 try {
                     save(thisRef.frontStore, converted)
                 } catch (e: IOException) {
-                    MLog.e(
-                        "Encounters IOException when writing data to dataStore ${thisRef.fileName}.",
-                        tr = e
-                    )
+                    MLog.e(errMsg, tr = e)
 
-                    try {
-                        val typeName =
-                            if (convert == null &&
-                                T::class in arrayOf<KClass<*>>(
-                                    Int::class, Long::class,
-                                    Float::class, Double::class,
-                                    String::class, Boolean::class
-                                )
-                            )
-                                T::class.simpleName
-                            else
-                                "String"
+                    val typeName =
+                        if (convert == null && T::class in directKClasses)
+                            T::class.simpleName
+                        else
+                            "String"
 
-                        val ioExceptionInfo = "$typeName ${property.name}"
+                    val ioExceptionInfo = "$typeName ${property.name}"
 
-                        thisRef.backupStore.edit {
-                            val oldSet = it[thisRef.ioExceptionRecordsKey] ?: emptySet()
-                            it[thisRef.ioExceptionRecordsKey] = oldSet + ioExceptionInfo
-                        }
-                    }catch (e: IOException){
-                        MLog.e(
-                            "Encounters IOException when writing data to backup dataStore ${thisRef.fileName}.",
-                            tr = e
-                        )
+                    thisRef.backupStore.edit {
+                        val oldSet = it[thisRef.ioExceptionRecordsKey] ?: emptySet()
+                        it[thisRef.ioExceptionRecordsKey] = oldSet + ioExceptionInfo
                     }
                 }
 
                 try {
                     save(thisRef.backupStore, converted)
                 }catch (e: IOException){
-                    MLog.e(e)
+                    MLog.e(errMsg + "_backup", tr = e)
                 }
             }
             .launchIn(thisRef.handlerScope)

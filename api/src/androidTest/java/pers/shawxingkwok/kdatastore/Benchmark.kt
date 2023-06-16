@@ -11,14 +11,11 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
-import pers.shawxingkwok.ktutil.roundToString
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
@@ -33,7 +30,7 @@ internal class Benchmark {
             }
         }
 
-    val size = 30
+    val size = 300
     val keys = (1..size).map { RandomString(7) }
 
     lateinit var info: Map<String, String>
@@ -44,111 +41,135 @@ internal class Benchmark {
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
-    // warm up
-    init {
-        val sp = context.getSharedPreferences("_sp", Context.MODE_PRIVATE)
-        val ds = PreferenceDataStoreFactory.create {
-            context.preferencesDataStoreFile("_ds")
-        }
-
-        updateInfo()
-
-        info.forEach { (key, value) ->
-            sp.edit(true) {
-                putString(key, value)
+    @OptIn(ExperimentalTime::class)
+    inline fun logDuration(name: String, times: Int, act: () -> Unit) {
+        val duration =
+            measureTime {
+                repeat(times) { act() }
             }
-            sp.getString(key, "")
 
-            runBlocking {
-                ds.edit {
-                    it[stringPreferencesKey(key)] = value
-                }
-                ds.data.first()[stringPreferencesKey(key)]
-            }
-        }
-        sp.edit(true){ clear() }
-        runBlocking { ds.edit { it.clear() } }
-        repeat(10) { getDuration(size) {  } }
+        MLog(name, duration.inWholeMicroseconds / times)
     }
 
-    @OptIn(ExperimentalTime::class, ExperimentalContracts::class)
-    inline fun getDuration(divider: Int, act: () -> Unit): String {
-        contract {
-            callsInPlace(act, InvocationKind.EXACTLY_ONCE)
+    inline fun logDurationWithInfo(header: String, act: (String, String) -> Unit) {
+        val duration = measureTime {
+            info.forEach { (key, value) ->
+                act(key, value)
+            }
         }
-        return (kotlin.time.measureTime(act).inWholeMicroseconds / (divider.toFloat())).roundToString(2)
+
+        MLog(header, duration.inWholeMicroseconds / info.size)
     }
 
-    val sp: SharedPreferences = context.getSharedPreferences("sp", Context.MODE_PRIVATE)
+    lateinit var sp: SharedPreferences
+    lateinit var ds: DataStore<Preferences>
+    lateinit var kv: MMKV
 
-    val ds: DataStore<Preferences> =
-        PreferenceDataStoreFactory.create {
-            context.preferencesDataStoreFile("ds")
+    fun launchWithRead(){
+        MLog("launch with reading")
+
+        logDuration("sp", 1) {
+            sp = context.getSharedPreferences("sp", Context.MODE_PRIVATE)
+            sp.all
         }
 
-    init {
-        MLog("sp read", getDuration(1) { sp.all.keys })
+        logDuration("kv", 1){
+            MMKV.initialize(context)
+            kv = MMKV.defaultMMKV()
+            kv.allKeys()
+        }
 
-        getDuration(1) {
+        logDuration("ds", 1) {
+            ds = PreferenceDataStoreFactory.create {
+                context.preferencesDataStoreFile("ds")
+            }
+
             runBlocking {
                 ds.data.first()
             }
         }
-        .let { MLog("ds read", it) }
     }
 
-    @Test
+    fun read() {
+        MLog("read")
+
+        logDuration("sp", 10) { sp.all }
+
+        logDuration("kv",10) { kv.allKeys() }
+
+        logDuration("ds", 10) {
+            runBlocking {
+                ds.data.first()
+            }
+        }
+    }
+
     fun write() {
+        MLog("write")
+
         // clear
         sp.edit(true){ clear() }
+
+        kv.edit(true) { clear() }
 
         runBlocking {
             ds.edit { it.clear() }
         }
 
-        // place data in the first round
+        // log the actual runtime in the second round
         updateInfo()
 
-        info.forEach { (key, value) ->
+        logDurationWithInfo("sp") { key, value ->
             sp.edit(true) {
                 putString(key, value)
             }
         }
 
-        info.forEach { (keyName, value) ->
+        logDurationWithInfo("kv") { key, value ->
+            kv.encode(key, value)
+        }
+
+        logDurationWithInfo("ds") { keyName, value ->
             runBlocking {
                 ds.edit {
                     it[stringPreferencesKey(keyName)] = value
                 }
             }
         }
+    }
 
-        // log the actual runtime in the second round
-        updateInfo()
+    @Test
+    fun start() {
+        launchWithRead()
+        read()
+        write()
+        val key = "GSIGN"
+        val value = "Gpjqtgj"
 
-        getDuration(size) {
-            info.forEach { (key, value) ->
-                sp.edit(true) {
-                    putString(key, value)
-                }
-            }
+        sp.edit {
+            putString(key, value)
         }
-        .let { MLog("sp write", it) }
 
-        getDuration(size) {
-            info.forEach { (keyName, value) ->
-                runBlocking {
-                    ds.edit {
-                        it[stringPreferencesKey(keyName)] = value
-                    }
-                }
-            }
+        logDuration("sp", 1){
+            sp.getString(key, "")
         }
-        .let { MLog("ds write", it) }
+
+        kv.encode(key, value)
+        logDuration("kv", 1) {
+            kv.decodeString(key)
+        }
 
         runBlocking {
-            MLog(sp.all.size)
-            MLog(ds.data.first().asMap().size)
+            ds.edit {
+                it[stringPreferencesKey(key)] = value
+            }
         }
+
+        runBlocking {
+            logDuration("ds",1){
+                ds.data.first()
+            }
+        }
+        MLog("...............")
     }
 }

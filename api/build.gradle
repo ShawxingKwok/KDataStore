@@ -58,3 +58,8 @@ dependencies {
 tasks.withType(KotlinCompile).configureEach{
     kotlinOptions.freeCompilerArgs += "-Xexplicit-api=warning"
 }
+
+//TOOD(remove)
+dependencies {
+    implementation 'com.tencent:mmkv:1.3.0'
+}

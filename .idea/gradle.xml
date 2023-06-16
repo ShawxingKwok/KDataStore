@@ -8,9 +8,7 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/core" />
-            <option value="$PROJECT_DIR$/java" />
-            <option value="$PROJECT_DIR$/kt" />
+            <option value="$PROJECT_DIR$/api" />
           </set>
         </option>
       </GradleProjectSettings>

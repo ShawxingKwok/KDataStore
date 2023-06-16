@@ -3,6 +3,7 @@ package pers.shawxingkwok.kdatastore
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.startup.Initializer
+import com.tencent.mmkv.MMKV
 
 internal class MyInitializer : Initializer<Unit> {
     companion object{
