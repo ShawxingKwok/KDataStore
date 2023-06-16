@@ -37,7 +37,6 @@ public abstract class KDataStore(
         public val liveData: LiveData<T>
     }
 
-    @PublishedApi
     internal val flows: MutableList<Flow<*>> = mutableListOf()
 
     protected val context: Context = MyInitializer.context
