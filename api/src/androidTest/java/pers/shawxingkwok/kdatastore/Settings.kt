@@ -1,0 +1,36 @@
+package pers.shawxingkwok.kdatastore
+
+class Settings() : KDataStore("settings") {
+    private val defaultContent = ""
+
+    val fjiod by string(defaultContent)
+    val giffjiod by string(defaultContent)
+    val fjiodgf by string(defaultContent)
+    val fjioegrd by string(defaultContent)
+    val fjiofged by string(defaultContent)
+    val fjiodfg by string(defaultContent)
+    val pegjfjiod by string(defaultContent)
+    val fjiopfrjed by string(defaultContent)
+    val gfjiod by string(defaultContent)
+    val fgegjiod by string(defaultContent)
+    val fjiogpjtd by string(defaultContent)
+    val fjiotrd by string(defaultContent)
+    val fjioda by string(defaultContent)
+    val fjiodvd by string(defaultContent)
+    val fjiohgd by string(defaultContent)
+    val fjiojkud by string(defaultContent)
+    val fjiodypt by string(defaultContent)
+    val oprtfjiod by string(defaultContent)
+    val fjihtpod by string(defaultContent)
+    val fjiodhptj by string(defaultContent)
+    val tjpwrfjiod by string(defaultContent)
+    val gprgfjiod by string(defaultContent)
+    val fjiopghd by string(defaultContent)
+    val gopffjiod by string(defaultContent)
+    val fjiogpd by string(defaultContent)
+    val gpffjiod by string(defaultContent)
+    val fjgpfiod by string(defaultContent)
+    val fjiogopfd by string(defaultContent)
+    val fjiodghtp by string(defaultContent)
+    val gpfjiod by string(defaultContent)
+}

@@ -1,4 +1,4 @@
-package pers.shawxingkwok.kdatastore
+package pers.shawxingkwok.myapplication
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -8,21 +8,18 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
-import org.junit.Test
-import org.junit.runner.RunWith
+import pers.shawxingkwok.kdatastore.KDataStore
 import pers.shawxingkwok.ktutil.roundToString
+import java.util.concurrent.TimeUnit
 import kotlin.reflect.KVisibility
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
-@RunWith(AndroidJUnit4::class)
-internal class Benchmark {
+internal class Benchmark(private val context: Context) {
     val enlargedTimes = 1
 
     fun RandomString(length: Int): String =
@@ -40,8 +37,6 @@ internal class Benchmark {
         info = keys.associateWith { RandomString(20) }
     }
 
-    private val context = InstrumentationRegistry.getInstrumentation().targetContext
-
     @OptIn(ExperimentalTime::class)
     inline fun logDuration(header: String, times: Int, act: () -> Unit) {
         val duration =
@@ -49,7 +44,7 @@ internal class Benchmark {
                 repeat(times) { act() }
             }
 
-        MLog("$header: ${duration.inWholeMicroseconds / times} µs")
+        MLog.e("$header: ${duration.inWholeMicroseconds / times} µs")
     }
 
     @OptIn(ExperimentalTime::class)
@@ -60,7 +55,7 @@ internal class Benchmark {
             }
         }
 
-        MLog("$header: ${duration.inWholeMicroseconds / info.size} µs")
+        MLog.e("$header: ${duration.inWholeMicroseconds / info.size} µs")
     }
 
     lateinit var sp: SharedPreferences
@@ -69,6 +64,7 @@ internal class Benchmark {
     lateinit var ds: DataStore<Preferences>
     lateinit var kds: Settings
 
+    @OptIn(KDataStore.DelicateApi::class)
     fun launch(){
         logDuration("sp", 1) {
             sp = context.getSharedPreferences("sp", Context.MODE_PRIVATE)
@@ -92,13 +88,11 @@ internal class Benchmark {
         }
 
         val spLength = (sp.all.values.firstOrNull() as String?)?.length ?: 0
-        val kdsLength = kds.fjiodfg.value.length
-        require(spLength == kdsLength)
-        MLog("launch with size ${sp.all.size} * $spLength")
+        MLog.e("launch with size ${sp.all.size} * $spLength")
     }
 
     fun read() {
-        MLog("read")
+        MLog.e("read")
 
         logDuration("sp", 10) { sp.all }
 
@@ -127,7 +121,7 @@ internal class Benchmark {
 
         // log the actual runtime in the second round
         updateInfo()
-        MLog("write with size ${info.size}")
+        MLog.e("write with size ${info.size}")
 
         logDurationWithInfo("sp") { key, value ->
             sp.edit(true) {
@@ -183,7 +177,7 @@ internal class Benchmark {
             }
         }
         val diff = readTime.takeLast(info.size).average() - writeTime.average()
-        MLog("kds respond", (diff / 1000_000.0).roundToString(1) + " ms")
+        MLog.e("kds respond", (diff / 1000_000.0).roundToString(1) + " ms")
     }
 
     fun dsRespond(){
@@ -209,16 +203,14 @@ internal class Benchmark {
             }
         }
         val diff = readTime.takeLast(info.size).average() - writeTime.average()
-        MLog("ds respond", (diff / 1000_000.0).roundToString(1) + " ms")
+        MLog.e("ds respond", (diff / 1000_000.0).roundToString(1) + " ms")
     }
 
-    @Test
     fun start() {
-        // return
         launch()
-        read()
         write()
+        read()
         respond()
-        MLog("...............")
+        MLog.e("...............")
     }
 }
