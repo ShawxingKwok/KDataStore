@@ -77,6 +77,7 @@ internal inline fun <reified T> FlowDelegate(
 
                 val converted: Any? =
                     when{
+                        value == default -> null
                         value == null -> null
                         convert != null -> convert(value)
                         else -> value
