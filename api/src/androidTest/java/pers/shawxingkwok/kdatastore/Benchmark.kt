@@ -93,8 +93,21 @@ internal class Benchmark {
 
         val spLength = (sp.all.values.firstOrNull() as String?)?.length ?: 0
         val kdsLength = kds.fjiodfg.value.length
-        require(spLength == kdsLength)
+        require(spLength == kdsLength){
+            clearAll()
+            "$spLength, $kdsLength"
+        }
         MLog("launch with size ${sp.all.size} * $spLength")
+    }
+
+    fun clearAll(){
+        sp.edit(true){ clear() }
+
+        kv.edit(true) { clear() }
+
+        runBlocking {
+            ds.edit { it.clear() }
+        }
     }
 
     fun read() {
@@ -116,14 +129,7 @@ internal class Benchmark {
     }
 
     fun write() {
-        // clear
-        sp.edit(true){ clear() }
-
-        kv.edit(true) { clear() }
-
-        runBlocking {
-            ds.edit { it.clear() }
-        }
+        clearAll()
 
         // log the actual runtime in the second round
         updateInfo()
