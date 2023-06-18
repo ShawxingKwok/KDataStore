@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
@@ -30,11 +32,11 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+    buildFeatures.viewBinding true
 }
 
 dependencies {
-
-    implementation 'androidx.core:core-ktx:1.7.0'
+    implementation 'androidx.core:core-ktx:1.10.1'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
@@ -42,3 +44,15 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
+
+//region KDataStore
+tasks.withType(KotlinCompile).configureEach{
+    kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
+}
+
+dependencies {
+    implementation(project(":demo:settings"))
+//    implementation 'io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT'
+    implementation 'io.github.shawxingkwok:android-util-view:1.0.0-SNAPSHOT'
+}
+//endregion
