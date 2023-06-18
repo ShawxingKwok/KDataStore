@@ -48,7 +48,7 @@ public abstract class KDataStore(
     }
 
     private fun getBackupFile(): File {
-        return appContext.preferencesDataStoreFile("${fileName}.bak")
+        return appContext.preferencesDataStoreFile("$fileName.bak")
     }
     //endregion
 

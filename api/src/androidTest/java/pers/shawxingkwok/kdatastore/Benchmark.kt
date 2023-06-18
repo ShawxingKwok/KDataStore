@@ -79,9 +79,10 @@ internal class Benchmark {
             kv = MMKV.defaultMMKV()
         }
 
-        logDuration("ds with reading", 1) {
+        logDuration("ds", 1) {
             ds = context.dataStore
 
+            // It doesn't make sense if data is not loaded from the disk.
             runBlocking {
                 ds.data.first()
             }
@@ -220,7 +221,6 @@ internal class Benchmark {
 
     @Test
     fun start() {
-        // return
         launch()
         read()
         write()
