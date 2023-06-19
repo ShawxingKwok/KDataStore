@@ -1,16 +1,16 @@
 buildscript {
     ext{
-        compose_version = "1.4.0"
-        kt_version = '1.8.0'
+        version_compose = "1.4.0"
+        version_kt = '1.8.0'
     }
 }
 
 plugins {
     id 'com.android.application' version '7.4.1' apply false
     id 'com.android.library' version '7.4.1' apply false
-    id 'org.jetbrains.kotlin.android' version "$kt_version" apply false
-    id 'org.jetbrains.kotlin.plugin.serialization' version "$kt_version" apply false
-    id 'org.jetbrains.kotlin.jvm' version "$kt_version" apply false
+    id 'org.jetbrains.kotlin.android' version "$version_kt" apply false
+    id 'org.jetbrains.kotlin.plugin.serialization' version "$version_kt" apply false
+    id 'org.jetbrains.kotlin.jvm' version "$version_kt" apply false
     id "com.vanniktech.maven.publish" version "0.25.2" apply false
 }
 

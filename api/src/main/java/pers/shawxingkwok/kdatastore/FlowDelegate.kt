@@ -11,13 +11,6 @@ import java.io.IOException
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 
-@PublishedApi
-internal val directKClasses: List<KClass<*>> = listOf(
-    Int::class, Long::class,
-    Float::class, Double::class,
-    String::class, Boolean::class
-)
-
 // Use inline to help check cast
 @PublishedApi
 internal inline fun <reified T> FlowDelegate(
@@ -91,7 +84,11 @@ internal inline fun <reified T> FlowDelegate(
                     MLog.e(errMsg, tr = e)
 
                     val typeName =
-                        if (convert == null && T::class in directKClasses)
+                        if (convert == null && (
+                            T::class == Int::class || T::class == Long::class
+                            || T::class == Float::class || T::class == Double::class
+                            || T::class == String::class || T::class == Boolean::class
+                        ))
                             T::class.simpleName
                         else
                             "String"
@@ -107,7 +104,7 @@ internal inline fun <reified T> FlowDelegate(
                 try {
                     save(thisRef.backupStore, converted)
                 }catch (e: IOException){
-                    MLog.e("$errMsg.bak", tr = e)
+                    MLog.e("${errMsg}bak.", tr = e)
                 }
             }
             .launchIn(thisRef.handlerScope)

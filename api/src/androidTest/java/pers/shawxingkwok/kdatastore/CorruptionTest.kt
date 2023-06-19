@@ -1,6 +1,7 @@
 package pers.shawxingkwok.kdatastore
 
 import android.content.SharedPreferences
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
