@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content">
+
+    <EditText
+            android:id="@+id/et_firstName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="First name"
+            android:inputType="text"
+            android:importantForAutofill="no"
+            tools:ignore="LabelFor"/>
+
+    <EditText
+            android:id="@+id/et_lastName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Last name"
+            android:inputType="text"
+            android:importantForAutofill="no"
+            tools:ignore="LabelFor"/>
+
+    <RadioGroup
+            android:id="@+id/rg_gender"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="80dp"
+            android:paddingEnd="80dp">
+
+        <RadioButton
+                android:id="@+id/male"
+                android:text="Male"
+                android:layout_weight="1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+        <RadioButton
+                android:id="@+id/female"
+                android:text="Female"
+                android:layout_weight="1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+    </RadioGroup>
+</LinearLayout>

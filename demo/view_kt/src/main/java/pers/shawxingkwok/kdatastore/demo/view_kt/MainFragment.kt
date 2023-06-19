@@ -5,12 +5,15 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import pers.shawxingkwok.androidutil.view.collectOnResume
+import pers.shawxingkwok.kdatastore.demo.settings.Info
 import pers.shawxingkwok.kdatastore.demo.settings.Theme
 import pers.shawxingkwok.kdatastore.demo.settings.Settings
 import pers.shawxingkwok.kdatastore.demo.view_kt.databinding.FragmentMainBinding
+import pers.shawxingkwok.kdatastore.demo.view_kt.databinding.InfoBinding
 
 class MainFragment : Fragment() {
     companion object {
@@ -32,12 +35,14 @@ class MainFragment : Fragment() {
             binding.btnTheme.text = "Theme: ${it.text}"
         }
 
-        Settings.currentRole.collectOnResume{
-            binding.btnUser.text =
-                if (it == null)
-                    "Set user"
-                else
-                    "Hello, ${it.name}"
+        Settings.info.collectOnResume{ info ->
+            binding.btnInfo.text =
+                if (info == null)
+                    "Set info"
+                else{
+                    val infix = if (info.isMale) "Mr" else "Miss"
+                    "Hello, $infix ${info.lastName}"
+                }
         }
 
         onClickBtnTheme()
@@ -63,19 +68,45 @@ class MainFragment : Fragment() {
     }
 
     private fun onClickBtnUser(){
-        binding.btnUser.setOnClickListener {
+        binding.btnInfo.setOnClickListener {
             val dialogBuilder = AlertDialog.Builder(requireContext())
-            dialogBuilder.setTitle("Set role")
+            dialogBuilder.setTitle("Info")
 
-            val allRoles = Settings.allRoles.value
-            val currentRole = Settings.currentRole.value
-            val items = allRoles.map { "${it.name} at age ${it.age}" }.toTypedArray() + "Disable"
+            val infoBinding = InfoBinding.inflate(layoutInflater, null, false)
+            dialogBuilder.setView(infoBinding.root)
 
-            val i = currentRole?.let(allRoles::indexOf) ?: items.lastIndex
+            val info = Settings.info.value
+            if (info != null) {
+                infoBinding.etFirstName.setText(info.firstName)
+                infoBinding.etLastName.setText(info.lastName)
+                infoBinding.male.isChecked = info.isMale
+                infoBinding.female.isChecked = !info.isMale
+            }
 
-            dialogBuilder.setSingleChoiceItems(items, i) { dialog, which ->
-                Settings.currentRole.value = allRoles.elementAtOrNull(which)
-                dialog.dismiss()
+            dialogBuilder.setCancelable(false)
+
+            dialogBuilder.setPositiveButton("Done"){ dialog, _ ->
+                val firstName = infoBinding.etFirstName.text.toString()
+                val lastName = infoBinding.etLastName.text.toString()
+                val isMale = infoBinding.male.isChecked
+
+                if (firstName.isEmpty()
+                    || lastName.isEmpty()
+                    || (!infoBinding.male.isChecked && !infoBinding.female.isChecked)
+                )
+                    Toast.makeText(requireContext(), "Not completed", Toast.LENGTH_SHORT).show()
+                else {
+                    Settings.info.value = Info(firstName, lastName, isMale)
+                    dialog.dismiss()
+                }
+            }
+
+            dialogBuilder.setNeutralButton("Clear"){ _, _ ->
+                Settings.info.value = null
+            }
+
+            dialogBuilder.setNegativeButton("Cancel"){ dialog, _ ->
+                dialog.cancel()
             }
 
             dialogBuilder.show()

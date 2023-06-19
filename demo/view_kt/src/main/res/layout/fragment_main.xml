@@ -19,7 +19,7 @@
             app:layout_constraintTop_toTopOf="parent"/>
 
     <Button
-            android:id="@+id/btn_user"
+            android:id="@+id/btn_info"
             tools:text="Hello, Jack"
             android:textAllCaps="false"
             android:layout_width="wrap_content"

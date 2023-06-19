@@ -24,13 +24,4 @@ class ExampleInstrumentedTest {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         assertEquals("pers.shawxingkwok.kdatastore.demo.settings.test", appContext.packageName)
     }
-
-    @Test
-    fun addUsers(){
-        Log.d("Shawxing", "${Settings.allRoles.value}")
-        Settings.allRoles.value = setOf(Role("Jack", "fdlap[f"))
-        runBlocking {
-            delay(1000)
-        }
-    }
 }
