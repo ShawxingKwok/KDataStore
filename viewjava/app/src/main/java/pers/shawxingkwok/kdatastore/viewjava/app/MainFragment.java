@@ -36,6 +36,7 @@ public class MainFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // set display with stored data
         // LiveData observation is needless here in this case.
         switch (Settings.getTheme().getValue()){
             case FOLLOW_SYSTEM:
@@ -51,6 +52,7 @@ public class MainFragment extends Fragment {
                 break;
         }
 
+        // update stored data in Listener
         binding.rgTheme.setOnCheckedChangeListener(
             (group, checkedId) -> {
                 Theme newTheme;

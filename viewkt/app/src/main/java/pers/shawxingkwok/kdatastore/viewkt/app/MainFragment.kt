@@ -27,6 +27,7 @@ class MainFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // set display with stored data
         // Flow collection is needless here in this case.
         when (Settings.theme.value) {
             Theme.FOLLOW_SYSTEM -> binding.rbFollowSystem
@@ -35,17 +36,16 @@ class MainFragment : Fragment() {
         }
         .isChecked = true
 
-        binding.rgTheme.setOnCheckedChangeListener { _, checkedId -> setTheme(checkedId) }
-    }
-
-    private fun setTheme(@IdRes id: Int){
-        Settings.theme.value =
-            when(id){
-                R.id.rb_followSystem -> Theme.FOLLOW_SYSTEM
-                R.id.rb_dark -> Theme.DARK
-                R.id.rb_light -> Theme.LIGHT
-                else -> error("")
-            }
+        // update stored data in Listener
+        binding.rgTheme.setOnCheckedChangeListener { _, id ->
+            Settings.theme.value =
+                when(id){
+                    R.id.rb_followSystem -> Theme.FOLLOW_SYSTEM
+                    R.id.rb_dark -> Theme.DARK
+                    R.id.rb_light -> Theme.LIGHT
+                    else -> error("")
+                }
+        }
     }
 
     override fun onDestroyView() {

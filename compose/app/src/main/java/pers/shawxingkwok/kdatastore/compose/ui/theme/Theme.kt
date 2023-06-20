@@ -31,6 +31,7 @@ private val LightColorPalette = lightColors(
 
 @Composable
 fun MyTheme(content: @Composable () -> Unit) {
+    // observe
     val isDarkMode = Settings.isDarkMode.collectAsState()
 
     MaterialTheme(

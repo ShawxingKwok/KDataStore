@@ -20,8 +20,8 @@ fun DarkModeSelector() {
         map.forEach { (option, text) ->
             Row {
                 RadioButton(
-                    selected = (option == isDark.value),
-                    onClick = { Settings.isDarkMode.value = option }
+                    selected = (option == isDark.value), // observe
+                    onClick = { Settings.isDarkMode.value = option } // update
                 )
 
                 Text(

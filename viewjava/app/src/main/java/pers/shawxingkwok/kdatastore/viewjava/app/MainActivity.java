@@ -19,8 +19,22 @@ public class MainActivity extends AppCompatActivity {
                 .commitNow();
         }
 
+        // link stored data to the corresponding functionality via LiveData.
         Settings.getTheme().getLiveData().observe(this, (theme)->{
-            AppCompatDelegate.setDefaultNightMode(theme.getMode());
+            switch (theme){
+                case FOLLOW_SYSTEM:
+                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+                    break;
+
+                case DARK:
+                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+                    break;
+
+                case LIGHT:
+                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+                    break;
+            }
+
             getDelegate().applyDayNight();
         });
     }

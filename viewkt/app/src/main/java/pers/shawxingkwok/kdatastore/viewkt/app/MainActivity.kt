@@ -20,10 +20,18 @@ class MainActivity : AppCompatActivity() {
                 replace(R.id.container, MainFragment.newInstance())
             }
 
+        // link stored data to the corresponding functionality.
         Settings.theme.onEach {
             AppCompatDelegate.setDefaultNightMode(it.mode)
             delegate.applyDayNight()
         }
         .launchIn(lifecycleScope)
+
+        /* or use liveData
+        Settings.theme.liveData.observe(this){
+            AppCompatDelegate.setDefaultNightMode(it.mode)
+            delegate.applyDayNight()
+        }
+        */
     }
 }
