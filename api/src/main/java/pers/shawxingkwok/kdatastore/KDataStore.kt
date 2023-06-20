@@ -18,7 +18,7 @@ import java.io.*
 import kotlin.reflect.full.functions
 
 /**
- * An extended data store with little configuration, easy encryption and extensive supported types.
+ * An extended data store with little configuration, easy encryption, exception safety and extensive supported types.
  *
  * See [tutorial](https://shawxingkwok.github.io/ITWorks/docs/kdatastore/).
  */
@@ -325,7 +325,7 @@ public abstract class KDataStore(
         anyWithString<T?>(null, Json::encodeToString, Json::decodeFromString)
 
     /**
-     * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [Serializable];
+     * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [S];
      */
     protected inline fun <reified T: Any, reified S: Serializable> storeAny(
         default: T,
@@ -347,7 +347,7 @@ public abstract class KDataStore(
         )
 
     /**
-     * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [Serializable];
+     * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [S];
      */
     protected inline fun <reified T: Any, reified S: Serializable> storeNullableAny(
         noinline convert: (T) -> S,

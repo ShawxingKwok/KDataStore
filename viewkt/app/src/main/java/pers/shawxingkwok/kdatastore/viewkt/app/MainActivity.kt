@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity() {
             }
 
         Settings.theme.onEach {
-            AppCompatDelegate.setDefaultNightMode(it.value)
+            AppCompatDelegate.setDefaultNightMode(it.mode)
             delegate.applyDayNight()
         }
         .launchIn(lifecycleScope)

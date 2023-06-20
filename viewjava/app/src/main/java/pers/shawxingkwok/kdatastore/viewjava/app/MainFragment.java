@@ -1,10 +1,7 @@
 package pers.shawxingkwok.kdatastore.viewjava.app;
 
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
 import android.os.Bundle;
-import android.widget.Toast;
-import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -34,12 +31,12 @@ public class MainFragment extends Fragment {
         return binding.getRoot();
     }
 
-    @SuppressLint("SetTextI18n")
+    @SuppressLint("NonConstantResourceId")
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Collection is needless here.
+        // LiveData observation is needless here in this case.
         switch (Settings.getTheme().getValue()){
             case FOLLOW_SYSTEM:
                 binding.rbFollowSystem.setChecked(true);
@@ -55,34 +52,30 @@ public class MainFragment extends Fragment {
         }
 
         binding.rgTheme.setOnCheckedChangeListener(
-            (group, checkedId) -> setTheme(checkedId)
+            (group, checkedId) -> {
+                Theme newTheme;
+
+                switch (checkedId){
+                    case R.id.rb_followSystem:
+                        newTheme = Theme.FOLLOW_SYSTEM;
+                        break;
+
+                    case R.id.rb_dark:
+                        newTheme = Theme.DARK;
+                        break;
+
+                    case R.id.rb_light:
+                        newTheme = Theme.LIGHT;
+                        break;
+
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + checkedId);
+                }
+
+                Settings.getTheme().setValue(newTheme);
+            }
         );
     }
-
-    @SuppressLint("NonConstantResourceId")
-    private void setTheme(@IdRes int id){
-        Theme newTheme;
-
-        switch (id){
-            case R.id.rb_followSystem:
-                newTheme = Theme.FOLLOW_SYSTEM;
-                break;
-
-            case R.id.rb_dark:
-                newTheme = Theme.DARK;
-                break;
-
-            case R.id.rb_light:
-                newTheme = Theme.LIGHT;
-                break;
-
-            default:
-                throw new IllegalStateException("Unexpected value: " + id);
-        }
-
-        Settings.getTheme().setValue(newTheme);
-    }
-
 
     @Override
     public void onDestroyView() {

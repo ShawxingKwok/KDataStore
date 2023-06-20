@@ -27,7 +27,7 @@ class MainFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Collection is needless here in this case.
+        // Flow collection is needless here in this case.
         when (Settings.theme.value) {
             Theme.FOLLOW_SYSTEM -> binding.rbFollowSystem
             Theme.DARK -> binding.rbDark

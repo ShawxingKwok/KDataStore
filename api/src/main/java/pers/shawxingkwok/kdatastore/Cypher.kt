@@ -5,9 +5,14 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
+/**
+ * Used in [KDataStore].
+ *
+ * You could choose my realized [Cypher.AES], or others if the data is highly confidential.
+ */
 public interface Cypher {
-    public fun encrypt(data: ByteArray): ByteArray
-    public fun decrypt(data: ByteArray): ByteArray
+    public fun encrypt(bytes: ByteArray): ByteArray
+    public fun decrypt(bytes: ByteArray): ByteArray
 
     /**
      * Persist [ivBytes], [password] and [salt] somewhere if you generate them randomly.
@@ -46,16 +51,16 @@ public interface Cypher {
             SecretKeySpec(key, "AES")
         }
 
-        private val encryptCipher = Cipher.getInstance(algorithm).also {
+        private val encipher = Cipher.getInstance(algorithm).also {
             it.init(Cipher.ENCRYPT_MODE, key, iv)
         }
 
-        private val decryptCipher = Cipher.getInstance(algorithm).also {
+        private val decipher = Cipher.getInstance(algorithm).also {
             it.init(Cipher.DECRYPT_MODE, key, iv)
         }
 
-        override fun encrypt(data: ByteArray): ByteArray = encryptCipher.doFinal(data)
+        override fun encrypt(bytes: ByteArray): ByteArray = encipher.doFinal(bytes)
 
-        override fun decrypt(data: ByteArray): ByteArray = decryptCipher.doFinal(data)
+        override fun decrypt(bytes: ByteArray): ByteArray = decipher.doFinal(bytes)
     }
 }

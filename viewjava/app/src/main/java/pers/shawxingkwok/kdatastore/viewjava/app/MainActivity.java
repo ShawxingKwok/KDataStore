@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Settings.getTheme().getLiveData().observe(this, (theme)->{
-            AppCompatDelegate.setDefaultNightMode(theme.getValue());
+            AppCompatDelegate.setDefaultNightMode(theme.getMode());
             getDelegate().applyDayNight();
         });
     }
