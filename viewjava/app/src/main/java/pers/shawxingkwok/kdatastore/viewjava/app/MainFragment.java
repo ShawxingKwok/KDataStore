@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.os.Bundle;
 import android.widget.Toast;
+import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -11,8 +12,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import pers.shawxingkwok.kdatastore.viewjava.app.databinding.FragmentMainBinding;
-import pers.shawxingkwok.kdatastore.viewjava.app.databinding.InfoBinding;
-import pers.shawxingkwok.kdatastore.viewjava.settings.Info;
 import pers.shawxingkwok.kdatastore.viewjava.settings.Settings;
 import pers.shawxingkwok.kdatastore.viewjava.settings.Theme;
 
@@ -40,95 +39,54 @@ public class MainFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Settings.getTheme().getLiveData().observe(getViewLifecycleOwner(), (theme)->{
-            String text = "Theme: " + theme.getText();
-            binding.btnTheme.setText(text);
-        });
+        // Collection is needless here.
+        switch (Settings.getTheme().getValue()){
+            case FOLLOW_SYSTEM:
+                binding.rbFollowSystem.setChecked(true);
+                break;
 
-        Settings.getInfo().getLiveData().observe(getViewLifecycleOwner(), (info)->{
-            String text;
+            case DARK:
+                binding.rbDark.setChecked(true);
+                break;
 
-            if (info == null)
-                text = "Set info";
-            else if(info.isMale())
-                text = "Hello, Mr " + info.getLastName();
-            else
-                text = "Hello, Miss " + info.getLastName();
+            case LIGHT:
+                binding.rbLight.setChecked(true);
+                break;
+        }
 
-            binding.btnInfo.setText(text);
-        });
-
-        onClickBtnTheme();
-        onClickBtnUser();
+        binding.rgTheme.setOnCheckedChangeListener(
+            (group, checkedId) -> setTheme(checkedId)
+        );
     }
 
-    private void onClickBtnTheme(){
-        binding.btnTheme.setOnClickListener((view)-> {
-            AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(requireContext());
+    @SuppressLint("NonConstantResourceId")
+    private void setTheme(@IdRes int id){
+        Theme newTheme;
 
-            String[] items = new String[Theme.values().length];
-            for (int i = 0; i < Theme.values().length; i++) {
-                items[i] = Theme.values()[i].getText();
-            }
+        switch (id){
+            case R.id.rb_followSystem:
+                newTheme = Theme.FOLLOW_SYSTEM;
+                break;
 
-            int i = Settings.getTheme().getValue().ordinal();
+            case R.id.rb_dark:
+                newTheme = Theme.DARK;
+                break;
 
-            dialogBuilder.setTitle("Set theme");
+            case R.id.rb_light:
+                newTheme = Theme.LIGHT;
+                break;
 
-            dialogBuilder.setSingleChoiceItems(items, i, (dialog, which) -> {
-                Theme newTheme = Theme.values()[which];
-                Settings.getTheme().setValue(newTheme);
-                dialog.dismiss();
-            });
+            default:
+                throw new IllegalStateException("Unexpected value: " + id);
+        }
 
-            dialogBuilder.show();
-        });
+        Settings.getTheme().setValue(newTheme);
     }
 
-    private void onClickBtnUser(){
-        binding.btnInfo.setOnClickListener((view)-> {
-            AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(requireContext());
-            dialogBuilder.setTitle("Info");
 
-            InfoBinding infoBinding = InfoBinding.inflate(getLayoutInflater(), null, false);
-            dialogBuilder.setView(infoBinding.getRoot());
-
-            Info info = Settings.getInfo().getValue();
-            if (info != null) {
-                infoBinding.etFirstName.setText(info.getFirstName());
-                infoBinding.etLastName.setText(info.getLastName());
-                infoBinding.male.setChecked(info.isMale());
-                infoBinding.female.setChecked(!info.isMale());
-            }
-
-            dialogBuilder.setPositiveButton("Done", (dialog, which) ->{
-                String firstName = infoBinding.etFirstName.getText().toString();
-                String lastName = infoBinding.etLastName.getText().toString();
-                boolean isMale = infoBinding.male.isChecked();
-
-                if (firstName.isEmpty()
-                    || lastName.isEmpty()
-                    || (!infoBinding.male.isChecked() && !infoBinding.female.isChecked())
-                )
-                    Toast.makeText(requireContext(), "Not completed", Toast.LENGTH_SHORT).show();
-                else {
-                    Info newInfo = new Info(firstName, lastName, isMale);
-                    Settings.getInfo().setValue(newInfo);
-                }
-
-                dialog.dismiss();
-            });
-
-            dialogBuilder.setNeutralButton("Clear", (dialog, which) -> {
-                Settings.getInfo().setValue(null);
-                dialog.dismiss();
-            });
-
-            dialogBuilder.setNegativeButton("Cancel", (dialog, which) -> {
-                dialog.dismiss();
-            });
-
-            dialogBuilder.show();
-        });
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
     }
 }

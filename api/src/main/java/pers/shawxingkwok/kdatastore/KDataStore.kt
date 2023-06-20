@@ -187,7 +187,7 @@ public abstract class KDataStore(
     //endregion
 
     //region direct delegates
-    private inline fun <reified T> KDataStore.direct(
+    private inline fun <reified T> KDataStore.directStore(
         default: T,
         noinline getKey: (String) -> Preferences.Key<T & Any>,
         noinline recover: (String) -> T & Any,
@@ -207,41 +207,41 @@ public abstract class KDataStore(
                 recover = recover,
             )
 
-    protected fun int(default: Int): KReadOnlyProperty<KDataStore, Flow<Int>> =
-        direct(default, ::intPreferencesKey, String::toInt)
+    protected fun storeInt(default: Int): KReadOnlyProperty<KDataStore, Flow<Int>> =
+        directStore(default, ::intPreferencesKey, String::toInt)
 
-    protected fun nullableInt(): KReadOnlyProperty<KDataStore, Flow<Int?>> =
-        direct(null, ::intPreferencesKey, String::toInt)
+    protected fun storeNullableInt(): KReadOnlyProperty<KDataStore, Flow<Int?>> =
+        directStore(null, ::intPreferencesKey, String::toInt)
 
-    protected fun long(default: Long): KReadOnlyProperty<KDataStore, Flow<Long>> =
-        direct(default, ::longPreferencesKey, String::toLong)
+    protected fun storeLong(default: Long): KReadOnlyProperty<KDataStore, Flow<Long>> =
+        directStore(default, ::longPreferencesKey, String::toLong)
 
-    protected fun nullableLong(): KReadOnlyProperty<KDataStore, Flow<Long?>> =
-        direct(null, ::longPreferencesKey, String::toLong)
+    protected fun storeNullableLong(): KReadOnlyProperty<KDataStore, Flow<Long?>> =
+        directStore(null, ::longPreferencesKey, String::toLong)
 
-    protected fun float(default: Float): KReadOnlyProperty<KDataStore, Flow<Float>> =
-        direct(default, ::floatPreferencesKey, String::toFloat)
+    protected fun storeFloat(default: Float): KReadOnlyProperty<KDataStore, Flow<Float>> =
+        directStore(default, ::floatPreferencesKey, String::toFloat)
 
-    protected fun nullableFloat(): KReadOnlyProperty<KDataStore, Flow<Float?>> =
-        direct(null, ::floatPreferencesKey, String::toFloat)
+    protected fun storeNullableFloat(): KReadOnlyProperty<KDataStore, Flow<Float?>> =
+        directStore(null, ::floatPreferencesKey, String::toFloat)
 
-    protected fun double(default: Double): KReadOnlyProperty<KDataStore, Flow<Double>> =
-        direct(default, ::doublePreferencesKey, String::toDouble)
+    protected fun storeDouble(default: Double): KReadOnlyProperty<KDataStore, Flow<Double>> =
+        directStore(default, ::doublePreferencesKey, String::toDouble)
 
-    protected fun nullableDouble(): KReadOnlyProperty<KDataStore, Flow<Double?>> =
-        direct(null, ::doublePreferencesKey, String::toDouble)
+    protected fun storeNullableDouble(): KReadOnlyProperty<KDataStore, Flow<Double?>> =
+        directStore(null, ::doublePreferencesKey, String::toDouble)
 
-    protected fun bool(default: Boolean): KReadOnlyProperty<KDataStore, Flow<Boolean>> =
-        direct(default, ::booleanPreferencesKey, String::toBoolean)
+    protected fun storeBool(default: Boolean): KReadOnlyProperty<KDataStore, Flow<Boolean>> =
+        directStore(default, ::booleanPreferencesKey, String::toBoolean)
 
-    protected fun nullableBool(): KReadOnlyProperty<KDataStore, Flow<Boolean?>> =
-        direct(null, ::booleanPreferencesKey, String::toBoolean)
+    protected fun storeNullableBool(): KReadOnlyProperty<KDataStore, Flow<Boolean?>> =
+        directStore(null, ::booleanPreferencesKey, String::toBoolean)
 
-    protected fun string(default: String): KReadOnlyProperty<KDataStore, Flow<String>> =
-        direct(default, ::stringPreferencesKey) { it }
+    protected fun storeString(default: String): KReadOnlyProperty<KDataStore, Flow<String>> =
+        directStore(default, ::stringPreferencesKey) { it }
 
-    protected fun nullableString(): KReadOnlyProperty<KDataStore, Flow<String?>> =
-        direct(null, ::stringPreferencesKey) { it }
+    protected fun storeNullableString(): KReadOnlyProperty<KDataStore, Flow<String?>> =
+        directStore(null, ::stringPreferencesKey) { it }
     //endregion
 
     //region converted delegates
@@ -276,7 +276,7 @@ public abstract class KDataStore(
                     recover,
         )
 
-    protected inline fun <reified T : Enum<T>> enum(default: T): KReadOnlyProperty<KDataStore, Flow<T>> {
+    protected inline fun <reified T : Enum<T>> storeEnum(default: T): KReadOnlyProperty<KDataStore, Flow<T>> {
         val valueOf = T::class.functions.first { it.name == "valueOf" }
 
         return anyWithString<T>(
@@ -288,7 +288,7 @@ public abstract class KDataStore(
         )
     }
 
-    protected inline fun <reified T : Enum<T>> nullableEnum(): KReadOnlyProperty<KDataStore, Flow<T?>> {
+    protected inline fun <reified T : Enum<T>> storeNullableEnum(): KReadOnlyProperty<KDataStore, Flow<T?>> {
         val valueOf = T::class.functions.first { it.name == "valueOf" }
 
         return anyWithString<T?>(
@@ -300,7 +300,7 @@ public abstract class KDataStore(
         )
     }
 
-    protected inline fun <reified T : Serializable> javaSerializable(default: T): KReadOnlyProperty<KDataStore, Flow<T>> =
+    protected inline fun <reified T : Serializable> storeJavaSerializable(default: T): KReadOnlyProperty<KDataStore, Flow<T>> =
         FlowDelegate<T>(
             default = default,
             getKey = ::stringPreferencesKey,
@@ -308,7 +308,7 @@ public abstract class KDataStore(
             recover = { src -> src.recoverToSerializable(cypher) },
         )
 
-    protected inline fun <reified T : Serializable> nullableJavaSerializable(): KReadOnlyProperty<KDataStore, Flow<T?>> =
+    protected inline fun <reified T : Serializable> storeNullableJavaSerializable(): KReadOnlyProperty<KDataStore, Flow<T?>> =
         FlowDelegate<T?>(
             default = null,
             getKey = ::stringPreferencesKey,
@@ -316,18 +316,18 @@ public abstract class KDataStore(
             recover = { src -> src.recoverToSerializable(cypher) },
         )
 
-    protected inline fun <reified T: Any> ktSerializable(default: T): KReadOnlyProperty<KDataStore, Flow<T>> =
+    protected inline fun <reified T: Any> storeKtSerializable(default: T): KReadOnlyProperty<KDataStore, Flow<T>> =
         //todo: switch to stream when 'Json.encodeToStream' is not experimental.
         anyWithString(default, Json::encodeToString, Json::decodeFromString)
 
-    protected inline fun <reified T: Any> nullableKtSerializable(): KReadOnlyProperty<KDataStore, Flow<T?>> =
+    protected inline fun <reified T: Any> storeNullableKtSerializable(): KReadOnlyProperty<KDataStore, Flow<T?>> =
         //todo: switch to stream when 'Json.encodeToStream' is not experimental.
         anyWithString<T?>(null, Json::encodeToString, Json::decodeFromString)
 
     /**
      * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [Serializable];
      */
-    protected inline fun <reified T: Any, reified S: Serializable> any(
+    protected inline fun <reified T: Any, reified S: Serializable> storeAny(
         default: T,
         noinline convert: (T) -> S,
         noinline recover: (S) -> T,
@@ -349,7 +349,7 @@ public abstract class KDataStore(
     /**
      * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [Serializable];
      */
-    protected inline fun <reified T: Any, reified S: Serializable> nullableAny(
+    protected inline fun <reified T: Any, reified S: Serializable> storeNullableAny(
         noinline convert: (T) -> S,
         noinline recover: (S) -> T,
     )
