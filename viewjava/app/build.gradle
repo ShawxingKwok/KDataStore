@@ -2,7 +2,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
 }
 
 android {
@@ -45,4 +44,5 @@ dependencies {
 // KDataStore
 dependencies {
     implementation(project(":viewjava:settings"))
+    implementation(project(":api")) // 'io.github.shawxingkwok:android-kdatastore:1.0.0'
 }

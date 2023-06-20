@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
+    id "com.vanniktech.maven.publish"
 }
 
 android {
@@ -62,4 +63,14 @@ tasks.withType(KotlinCompile).configureEach{
 //TODO(remove)
 dependencies {
     implementation 'com.tencent:mmkv:1.3.0'
+}
+
+// publish
+mavenPublishing {
+    coordinates("io.github.shawxingkwok", "android-kdatastore", "1.0.0-SNAPSHOT")
+    pom {
+        name = "Personal andorid data store extension"
+        description = ""
+        inceptionYear = "2023"
+    }
 }
