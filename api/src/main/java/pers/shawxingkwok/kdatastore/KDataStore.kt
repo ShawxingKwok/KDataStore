@@ -1,5 +1,6 @@
 package pers.shawxingkwok.kdatastore
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Base64
 import androidx.datastore.core.DataStore
@@ -7,6 +8,7 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.lifecycle.LiveData
+import androidx.startup.Initializer
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.decodeFromString
@@ -15,6 +17,7 @@ import kotlinx.serialization.json.Json
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import pers.shawxingkwok.ktutil.allDo
 import java.io.*
+import kotlin.concurrent.thread
 import kotlin.reflect.full.functions
 
 /**
@@ -35,6 +38,21 @@ public abstract class KDataStore(
          * Returns the only one converted [LiveData].
          */
         public val liveData: LiveData<T>
+    }
+
+    @SuppressLint("EnsureInitializerNoArgConstr")
+    public abstract class Initializer(
+        private val act: () -> Unit
+    )
+        : androidx.startup.Initializer<Unit>
+    {
+        final override fun dependencies(): List<Class<out androidx.startup.Initializer<*>>> {
+            return emptyList()
+        }
+
+        final override fun create(context: Context) {
+            thread { act() }
+        }
     }
 
     @PublishedApi

@@ -1,12 +1,16 @@
 package pers.shawxingkwok.kdatastore.compose.ui.theme
 
+import android.util.Log
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import pers.shawxingkwok.kdatastore.compose.settings.Settings
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
 
 private val DarkColorPalette = darkColors(
     primary = Purple200,
