@@ -70,9 +70,9 @@ internal inline fun <reified T> FlowDelegate(
 
                 val converted: Any? =
                     when{
+                        // default is null when nullable
                         value == default -> null
-                        value == null -> null
-                        convert != null -> convert(value)
+                        convert != null -> convert(value!!)
                         else -> value
                     }
 
