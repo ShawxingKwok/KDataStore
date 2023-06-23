@@ -1,5 +1,6 @@
 package pers.shawxingkwok.kdatastore
 
+import com.tencent.mmkv.MMKV
 import org.junit.Test
 import java.io.Serializable
 import java.util.concurrent.CyclicBarrier
@@ -15,6 +16,7 @@ class Runtime {
     @OptIn(ExperimentalTime::class)
     @Test
     fun start(){
+
         var x: Any = 0
 
         var cypher: Cypher? = Cypher.AES(

@@ -5,7 +5,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class Test {
     @Test
-    fun foo(){
-        println("foo")
-    }
+    fun start() {
+        Settings
+    }    
 }

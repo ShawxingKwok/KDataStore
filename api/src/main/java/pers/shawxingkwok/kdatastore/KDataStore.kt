@@ -25,9 +25,10 @@ import kotlin.reflect.full.functions
 public abstract class KDataStore(
     @PublishedApi internal val fileName: String,
     @PublishedApi internal val cypher: Cypher? = null,
-    @PublishedApi internal val handlerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
-    ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
+    @PublishedApi internal val handlerScope: CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
     public interface Flow<T> : MutableStateFlow<T>{
         public fun reset()
 
@@ -53,6 +54,8 @@ public abstract class KDataStore(
     //endregion
 
     //region frontStore, backupStore
+    private val ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     @PublishedApi
     internal val frontStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(

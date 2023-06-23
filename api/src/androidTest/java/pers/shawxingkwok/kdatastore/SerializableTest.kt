@@ -5,6 +5,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Test
 import java.io.Serializable
+import java.math.BigDecimal
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
