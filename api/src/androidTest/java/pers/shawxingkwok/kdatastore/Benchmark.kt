@@ -89,7 +89,7 @@ internal class Benchmark {
         }
 
         logDuration("kds", 1){
-            kds = Settings()
+            kds = Settings
         }
 
         val spLength = (sp.all.values.firstOrNull() as String?)?.length ?: 0

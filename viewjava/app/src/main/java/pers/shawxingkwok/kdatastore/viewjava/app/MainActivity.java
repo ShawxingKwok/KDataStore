@@ -1,8 +1,11 @@
 package pers.shawxingkwok.kdatastore.viewjava.app;
 
+import android.annotation.SuppressLint;
+import androidx.annotation.OptIn;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatDelegate;
+import pers.shawxingkwok.kdatastore.KDataStore;
 import pers.shawxingkwok.kdatastore.viewjava.settings.Settings;
 
 public class MainActivity extends AppCompatActivity {

@@ -1,14 +1,11 @@
 package pers.shawxingkwok.kdatastore
 
-import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.asLiveData
 import kotlinx.coroutines.flow.*
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import java.io.IOException
-import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 
 // Use inline to help check cast
@@ -26,88 +23,109 @@ internal inline fun <reified T> FlowDelegate(
         override fun onDelegate(thisRef: KDataStore, property: KProperty<*>) {
             @Suppress("UNCHECKED_CAST")
             val key = getKey(property.name) as Preferences.Key<Any>
-            thisRef.keys += key
             val src = thisRef.initialPrefs[key]
-
             val initialValue = when {
                 src == null -> default
                 recover != null -> recover(src as String)
                 else -> (src as T)
             }
 
-            val stateFlowDelegate = MutableStateFlow(initialValue)
+            var isOnResetAll = false
+            var onStart = true
+            var everCorrupted = false
 
-            flow = object : KDataStore.Flow<T>, MutableStateFlow<T> by stateFlowDelegate{
+            val keyTypeName =
+                if (convert == null && (
+                    T::class == Int::class || T::class == Long::class
+                    || T::class == Float::class || T::class == Double::class
+                    || T::class == String::class || T::class == Boolean::class
+                    )
+                )
+                    T::class.simpleName
+                else
+                    "String"
+
+            val ioExceptionInfo = "$keyTypeName ${property.name}"
+
+            flow = object : KDataStore.FlowImpl<T>(
+                thisRef, MutableStateFlow(initialValue), key
+            ){
                 override fun reset() {
                     value = default
                 }
 
-                override val liveData: LiveData<T> by lazy(mode = LazyThreadSafetyMode.PUBLICATION) {
-                    stateFlowDelegate.asLiveData()
+                override fun onResetAll() {
+                    isOnResetAll = true
+                    reset()
                 }
             }
 
-            thisRef.flows += flow
-
-            var onStart = true
-
-            val save: suspend (DataStore<Preferences>, Any?) -> Unit =
-                { store, convertedValue ->
-                    store.edit {
-                        if (convertedValue == null)
-                            it -= key
-                        else
-                            it[key] = convertedValue
-                    }
+            val save: suspend (MutablePreferences, Any?) -> Unit =
+                { prefs, convertedValue ->
+                    if (convertedValue == null)
+                        prefs -= key
+                    else
+                        prefs[key] = convertedValue
                 }
 
-            // not writes the initial value to the disk
-            flow.onEach { value ->
-                if (value != initialValue)
-                    onStart = false
+            val errMsg = "Encounters IOException when writing data to dataStore ${thisRef.fileName}."
 
-                if (onStart) return@onEach
-
-                val converted: Any? =
-                    when{
-                        value == default -> null
-                        value == null -> null
-                        convert != null -> convert(value)
-                        else -> value
-                    }
-
-                val errMsg = "Encounters IOException when writing data to dataStore ${thisRef.fileName}."
-
-                try {
-                    save(thisRef.frontStore, converted)
-                } catch (e: IOException) {
-                    MLog.e(errMsg, tr = e)
-
-                    val typeName =
-                        if (convert == null && (
-                            T::class == Int::class || T::class == Long::class
-                            || T::class == Float::class || T::class == Double::class
-                            || T::class == String::class || T::class == Boolean::class
-                        ))
-                            T::class.simpleName
-                        else
-                            "String"
-
-                    val ioExceptionInfo = "$typeName ${property.name}"
-
-                    thisRef.backupStore.edit {
-                        val oldSet = it[thisRef.ioExceptionRecordsKey] ?: emptySet()
-                        it[thisRef.ioExceptionRecordsKey] = oldSet + ioExceptionInfo
+            flow
+                // not writes to the disk when value is the initial
+                .filterNot { value ->
+                    if (onStart && value != initialValue)
+                        onStart = false
+                    onStart
+                }
+                // not writes to disk on resetAll
+                .filterNot {
+                    isOnResetAll.also {
+                        if (it) isOnResetAll = false
                     }
                 }
+                .onEach { value ->
+                    val converted: Any? =
+                        when {
+                            // default is null when value is nullable
+                            value == default -> null
+                            convert != null -> convert(value!!)
+                            else -> value
+                        }
 
-                try {
-                    save(thisRef.backupStore, converted)
-                }catch (e: IOException){
-                    MLog.e("${errMsg}bak.", tr = e)
+                    var corrupted = false
+
+                    try {
+                        thisRef.frontStore.edit { save(it, converted) }
+                    } catch (e: IOException) {
+                        MLog.e(errMsg, tr = e)
+                        everCorrupted = true
+                        corrupted = true
+                    }
+
+                    try {
+                        thisRef.backupStore.edit { prefs ->
+                            save(prefs, converted)
+
+                            if (!everCorrupted) return@edit
+
+                            val oldSet = prefs[thisRef.ioExceptionRecordsKey] ?: emptySet()
+
+                            val newSet =
+                                if (corrupted)
+                                    oldSet + ioExceptionInfo
+                                else
+                                    oldSet - ioExceptionInfo
+
+                            if (newSet.any())
+                                prefs[thisRef.ioExceptionRecordsKey] = newSet
+                            else
+                                prefs -= thisRef.ioExceptionRecordsKey
+                        }
+                    } catch (e: IOException) {
+                        MLog.e("${errMsg}bak.", tr = e)
+                    }
                 }
-            }
-            .launchIn(thisRef.handlerScope)
+                .launchIn(thisRef.handlerScope)
         }
 
         override fun getValue(thisRef: KDataStore, property: KProperty<*>): KDataStore.Flow<T> = flow

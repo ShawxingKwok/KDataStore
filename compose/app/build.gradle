@@ -68,6 +68,7 @@ dependencies {
 
 // KDataStore
 dependencies {
+
     implementation(project(":compose:settings"))
     implementation(project(":api")) // 'io.github.shawxingkwok:android-kdatastore:1.0.0'
 }

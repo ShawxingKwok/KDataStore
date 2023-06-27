@@ -1,6 +1,6 @@
 package pers.shawxingkwok.kdatastore
 
-class Settings() : KDataStore("settings") {
+object Settings : KDataStore("settings") {
     private val defaultContent = ""
 
     val fjiod by storeString(defaultContent)
@@ -33,4 +33,6 @@ class Settings() : KDataStore("settings") {
     val fjiogopfd by storeString(defaultContent)
     val fjiodghtp by storeString(defaultContent)
     val gpfjiod by storeString(defaultContent)
+
+    val name by storeString("Apollo")
 }

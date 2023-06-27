@@ -7,6 +7,7 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.asLiveData
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.decodeFromString
@@ -29,17 +30,34 @@ public abstract class KDataStore(
     @PublishedApi internal val handlerScope: CoroutineScope =
         CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+    private val flowImpls = mutableListOf<FlowImpl<*>>()
+
     public interface Flow<T> : MutableStateFlow<T>{
         public fun reset()
-
-        /**
-         * Returns the only one converted [LiveData].
-         */
         public val liveData: LiveData<T>
     }
 
     @PublishedApi
-    internal val flows: MutableList<Flow<*>> = mutableListOf()
+    internal abstract class FlowImpl<T>(
+        kDataStore: KDataStore,
+        delegate: MutableStateFlow<T>,
+        key: Preferences.Key<*>
+    )
+        : Flow<T>, MutableStateFlow<T> by delegate
+    {
+        init {
+            @Suppress("LeakingThis")
+            kDataStore.flowImpls += this
+            kDataStore.keys += key
+        }
+
+        abstract fun onResetAll()
+
+        override val liveData: LiveData<T> by lazy(
+            mode = LazyThreadSafetyMode.PUBLICATION,
+            initializer = delegate::asLiveData
+        )
+    }
 
     protected val appContext: Context = MyInitializer.context
 
@@ -82,8 +100,7 @@ public abstract class KDataStore(
     //endregion
 
     //region get initial preferences and fix
-    @PublishedApi
-    internal val keys: MutableSet<Preferences.Key<*>> = mutableSetOf()
+    private val keys: MutableSet<Preferences.Key<*>> = mutableSetOf()
 
     // only saved in backup store, because if you write again at once when IOException occurs, IOException
     // would probably occur again.
@@ -94,7 +111,7 @@ public abstract class KDataStore(
     // recovers with ioException records
     // ignores the IOException because reads only once.
     @PublishedApi
-    internal val initialPrefs: Preferences =
+    internal var initialPrefs: Preferences =
         runBlocking {
             val (frontPrefs, backupPrefs) =
                 listOf(frontStore, backupStore)
@@ -107,25 +124,23 @@ public abstract class KDataStore(
                     .toMutablePreferences()
                 }
 
+            // suppose frontStore corrupted
             if (frontPrefs.asMap().none()) {
                 backupPrefs -= ioExceptionRecordsKey
                 return@runBlocking backupPrefs
             }
 
-            if (backupPrefs.asMap().none())
-                return@runBlocking emptyPreferences()
-
             backupPrefs[ioExceptionRecordsKey]
                 ?.map {
-                    val (typeName, propName) = it.split(" ", limit = 2)
+                    val (keyTypeName, propName) = it.split(" ", limit = 2)
 
-                    when (typeName) {
+                    when (keyTypeName) {
                         "Int" -> intPreferencesKey(propName)
                         "Long" -> longPreferencesKey(propName)
                         "Float" -> floatPreferencesKey(propName)
                         "Double" -> doublePreferencesKey(propName)
-                        "Bool" -> floatPreferencesKey(propName)
-                        "String" -> floatPreferencesKey(propName)
+                        "Bool" -> booleanPreferencesKey(propName)
+                        "String" -> stringPreferencesKey(propName)
                         else -> error("")
                     }
                 }
@@ -139,8 +154,9 @@ public abstract class KDataStore(
                     }
                 }
 
-            frontPrefs
+            frontPrefs.toPreferences()
         }
+        private set
 
     // update disk asyncly
     init {
@@ -172,17 +188,14 @@ public abstract class KDataStore(
     //region delicate functions: reset delete exists
     @RequiresOptIn
     @Retention(AnnotationRetention.BINARY)
-    public annotation class DelicateApi
+    public annotation class DangerousApi
 
-    @DelicateApi
-    public fun reset() {
-        flows.forEach { it.reset() }
-    }
-
-    @DelicateApi
+    @DangerousApi
     public fun delete() {
+        initialPrefs = emptyPreferences()
         getFile().delete()
         getBackupFile().delete()
+        flowImpls.forEach { it.onResetAll() }
     }
 
     // todo: consider about 'getBackupFile().exists()'
