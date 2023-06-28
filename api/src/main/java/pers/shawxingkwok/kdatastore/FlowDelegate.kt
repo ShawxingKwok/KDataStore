@@ -30,7 +30,6 @@ internal inline fun <reified T> FlowDelegate(
                 else -> (src as T)
             }
 
-            var isOnResetAll = false
             var onStart = true
             var everCorrupted = false
 
@@ -53,11 +52,6 @@ internal inline fun <reified T> FlowDelegate(
                 override fun reset() {
                     value = default
                 }
-
-                override fun onResetAll() {
-                    isOnResetAll = true
-                    reset()
-                }
             }
 
             val save: suspend (MutablePreferences, Any?) -> Unit =
@@ -76,12 +70,6 @@ internal inline fun <reified T> FlowDelegate(
                     if (onStart && value != initialValue)
                         onStart = false
                     onStart
-                }
-                // not writes to disk on resetAll
-                .filterNot {
-                    isOnResetAll.also {
-                        if (it) isOnResetAll = false
-                    }
                 }
                 .onEach { value ->
                     val converted: Any? =

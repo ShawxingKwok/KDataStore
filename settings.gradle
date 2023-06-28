@@ -17,11 +17,7 @@ dependencyResolutionManagement {
 rootProject.name = "KDataStore"
 include ':api'
 
-include ':compose:app'
-include ':compose:settings'
-
-include ':viewjava:app'
-include ':viewjava:settings'
-
-include ':viewkt:app'
-include ':viewkt:settings'
+include ':demo:compose'
+include ':demo:settings'
+include ':demo:viewjava'
+include ':demo:viewkt'

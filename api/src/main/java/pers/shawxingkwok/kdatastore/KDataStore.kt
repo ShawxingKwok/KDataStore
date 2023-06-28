@@ -19,7 +19,8 @@ import java.io.*
 import kotlin.reflect.full.functions
 
 /**
- * An extended data store with little configuration, easy encryption, exception safety and extensive supported types.
+ * An extended data store with little configuration, easy encryption, exception safety
+ * and extensive supported types.
  *
  * See [tutorial](https://shawxingkwok.github.io/ITWorks/docs/kdatastore/).
  */
@@ -27,11 +28,6 @@ public abstract class KDataStore(
     @PublishedApi internal val fileName: String,
     @PublishedApi internal val cypher: Cypher? = null,
 ) {
-    @PublishedApi internal val handlerScope: CoroutineScope =
-        CoroutineScope(SupervisorJob() + Dispatchers.Main)
-
-    private val flowImpls = mutableListOf<FlowImpl<*>>()
-
     public interface Flow<T> : MutableStateFlow<T>{
         public fun reset()
         public val liveData: LiveData<T>
@@ -51,13 +47,16 @@ public abstract class KDataStore(
             kDataStore.keys += key
         }
 
-        abstract fun onResetAll()
-
         override val liveData: LiveData<T> by lazy(
             mode = LazyThreadSafetyMode.PUBLICATION,
             initializer = delegate::asLiveData
         )
     }
+
+    @PublishedApi internal val handlerScope: CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    private val flowImpls = mutableListOf<FlowImpl<*>>()
 
     protected val appContext: Context = MyInitializer.context
 
@@ -111,7 +110,7 @@ public abstract class KDataStore(
     // recovers with ioException records
     // ignores the IOException because reads only once.
     @PublishedApi
-    internal var initialPrefs: Preferences =
+    internal val initialPrefs: Preferences =
         runBlocking {
             val (frontPrefs, backupPrefs) =
                 listOf(frontStore, backupStore)
@@ -154,9 +153,8 @@ public abstract class KDataStore(
                     }
                 }
 
-            frontPrefs.toPreferences()
+            frontPrefs
         }
-        private set
 
     // update disk asyncly
     init {
@@ -192,14 +190,17 @@ public abstract class KDataStore(
 
     @DangerousApi
     public fun delete() {
-        initialPrefs = emptyPreferences()
         getFile().delete()
         getBackupFile().delete()
-        flowImpls.forEach { it.onResetAll() }
     }
 
     // todo: consider about 'getBackupFile().exists()'
     public fun exists(): Boolean = getFile().exists()
+
+    @DangerousApi
+    public fun reset(){
+        flowImpls.forEach { it.reset() }
+    }
     //endregion
 
     //region direct delegates

@@ -9,15 +9,11 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/api" />
-            <option value="$PROJECT_DIR$/compose" />
-            <option value="$PROJECT_DIR$/compose/app" />
-            <option value="$PROJECT_DIR$/compose/settings" />
-            <option value="$PROJECT_DIR$/viewjava" />
-            <option value="$PROJECT_DIR$/viewjava/app" />
-            <option value="$PROJECT_DIR$/viewjava/settings" />
-            <option value="$PROJECT_DIR$/viewkt" />
-            <option value="$PROJECT_DIR$/viewkt/app" />
-            <option value="$PROJECT_DIR$/viewkt/settings" />
+            <option value="$PROJECT_DIR$/demo" />
+            <option value="$PROJECT_DIR$/demo/compose" />
+            <option value="$PROJECT_DIR$/demo/settings" />
+            <option value="$PROJECT_DIR$/demo/viewjava" />
+            <option value="$PROJECT_DIR$/demo/viewkt" />
           </set>
         </option>
       </GradleProjectSettings>
