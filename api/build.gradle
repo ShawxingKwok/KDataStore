@@ -50,11 +50,10 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
     // TODO remove suffix
     implementation 'io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT'
-    implementation 'io.github.shawxingkwok:android-util:1.0.0-SNAPSHOT'
+    implementation 'io.github.shawxingkwok:android-util-core:1.0.0-SNAPSHOT'
     //noinspection GradleDependency
     implementation "org.jetbrains.kotlin:kotlin-reflect:$version_kt"
     implementation "androidx.datastore:datastore-preferences:1.0.0"
-    implementation "androidx.startup:startup-runtime:1.1.1"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.6.1'
 

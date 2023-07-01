@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import pers.shawxingkwok.androidutil.AppContext
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import pers.shawxingkwok.ktutil.allDo
 import java.io.*
@@ -58,15 +59,13 @@ public abstract class KDataStore(
 
     private val flowImpls = mutableListOf<FlowImpl<*>>()
 
-    protected val appContext: Context = MyInitializer.context
-
     //region getFile, getBackupFile
     private fun getFile(): File {
-        return appContext.preferencesDataStoreFile(fileName)
+        return AppContext.preferencesDataStoreFile(fileName)
     }
 
     private fun getBackupFile(): File {
-        return appContext.preferencesDataStoreFile("$fileName.bak")
+        return AppContext.preferencesDataStoreFile("$fileName.bak")
     }
     //endregion
 

@@ -1,6 +1,7 @@
 package pers.shawxingkwok.kdatastore
 
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
@@ -20,18 +21,13 @@ import kotlin.coroutines.EmptyCoroutineContext
 
 @RunWith(AndroidJUnit4::class)
 class CorruptionTest  {
-    val ds = PreferenceDataStoreFactory.create {
-        MyInitializer.context.preferencesDataStoreFile("corruptionTest")
-    }
-
     @Test
     fun start(){
         runBlocking {
-            MLog("(CorruptionTest.kt:26)")
-            ds.data.first()
-            ds.edit {
-                it[stringPreferencesKey("Fd")] = "gfrigk"
-            }
+            MLog("pers.shawxingkwok.kdatastore.s.(CorruptionTest.kt:26)")
+            Log.d("Shawxing", "jfp | at (CorruptionTest.kt:26)")
+            Log.d("Shawxing", "Ang at(CorruptionTest.kt:26)")
+            Log.d("Shawxing", "Ang (CorruptionTest.kt:26)")
         }
     }
 }
