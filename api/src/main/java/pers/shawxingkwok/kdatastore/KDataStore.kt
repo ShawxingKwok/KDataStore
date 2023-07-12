@@ -1,6 +1,5 @@
 package pers.shawxingkwok.kdatastore
 
-import android.content.Context
 import android.util.Base64
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
@@ -16,6 +15,7 @@ import kotlinx.serialization.json.Json
 import pers.shawxingkwok.androidutil.AppContext
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import pers.shawxingkwok.ktutil.allDo
+import pers.shawxingkwok.ktutil.lazyFast
 import java.io.*
 import kotlin.reflect.full.functions
 
@@ -23,12 +23,22 @@ import kotlin.reflect.full.functions
  * An extended data store with little configuration, easy encryption, exception safety
  * and extensive supported types.
  *
- * See [tutorial](https://shawxingkwok.github.io/ITWorks/docs/kdatastore/).
+ * See tutorial in my [ITWorks](https://shawxingkwok.github.io/ITWorks/). It's inside
+ * **Android** group in version `1.0.0` and would be moved to **KMM** in version `1.1.0`.
  */
 public abstract class KDataStore(
     @PublishedApi internal val fileName: String,
     @PublishedApi internal val cypher: Cypher? = null,
+    @PublishedApi internal val handlerScope: CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Main),
+    ioScope: CoroutineScope = DefaultIOScope,
 ) {
+    private companion object{
+        private val DefaultIOScope by lazyFast {
+            CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        }
+    }
+
     public interface Flow<T> : MutableStateFlow<T>{
         public fun reset()
         public val liveData: LiveData<T>
@@ -54,9 +64,6 @@ public abstract class KDataStore(
         )
     }
 
-    @PublishedApi internal val handlerScope: CoroutineScope =
-        CoroutineScope(SupervisorJob() + Dispatchers.Main)
-
     private val flowImpls = mutableListOf<FlowImpl<*>>()
 
     //region getFile, getBackupFile
@@ -70,8 +77,6 @@ public abstract class KDataStore(
     //endregion
 
     //region frontStore, backupStore
-    private val ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
     @PublishedApi
     internal val frontStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(

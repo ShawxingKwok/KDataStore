@@ -67,7 +67,7 @@ tasks.withType(KotlinCompile).configureEach{
 // publish
 mavenPublishing {
     // TODO remove suffix
-    coordinates("io.github.shawxingkwok", "android-kdatastore", "1.0.0-SNAPSHOT")
+    coordinates("io.github.shawxingkwok", "kdatastore", "1.0.0-SNAPSHOT")
     pom {
         name = "Personal andorid data store extension"
         description = ""
