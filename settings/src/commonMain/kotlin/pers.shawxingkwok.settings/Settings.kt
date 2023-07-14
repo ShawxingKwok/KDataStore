@@ -3,6 +3,7 @@ package pers.shawxingkwok.settings
 import kotlinx.serialization.Serializable
 import pers.apollokwok.kdatastore.KDataStore
 
+// Settings for traditional java is inside dir 'android.viewjava'.
 object Settings : KDataStore("settings") {
     @Serializable
     data class Dice(

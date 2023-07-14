@@ -34,7 +34,7 @@ public expect abstract class KDataStore(
     @CautiousApi
     public fun delete()
 
-    // todo: consider about including 'backupFile.exists'
+    // todo: consider including 'backupFile.exists'
     public fun exists(): Boolean
 
     @CautiousApi
