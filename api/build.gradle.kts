@@ -1,12 +1,17 @@
 plugins {
-    kotlin("multiplatform")
-    id("com.android.library")
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.nativecoroutines)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.android.library)
 }
 
-@OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
 kotlin {
-    explicitApi()
-    targetHierarchy.default()
+    explicitApiWarning()
+
+    android()
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
 
     android {
         compilations.all {
@@ -14,21 +19,10 @@ kotlin {
                 jvmTarget = "1.8"
             }
         }
-        dependencies{
-            implementation ("androidx.datastore:datastore-preferences:1.0.0")
-            implementation ("io.github.shawxingkwok:android-util-core:1.0.0-SNAPSHOT")
-            implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.6.1")
-        }
     }
-    
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach {
-        it.binaries.framework {
-            baseName = "api"
-        }
+
+    sourceSets.all {
+        languageSettings.optIn("kotlin.experimental.ExperimentalObjCName")
     }
 
     sourceSets {
@@ -44,18 +38,53 @@ kotlin {
                 implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
             }
         }
+
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test"))
+                implementation(libs.kotlin.test)
             }
+        }
+
+        val androidMain by getting{
+            dependencies{
+                implementation ("androidx.datastore:datastore-preferences:1.0.0")
+                implementation ("io.github.shawxingkwok:android-util-core:1.0.0-SNAPSHOT")
+                implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.6.1")
+            }
+        }
+
+        val androidUnitTest by getting
+        val iosX64Main by getting
+        val iosArm64Main by getting
+        val iosSimulatorArm64Main by getting
+        val iosMain by creating {
+            dependsOn(commonMain)
+            iosX64Main.dependsOn(this)
+            iosArm64Main.dependsOn(this)
+            iosSimulatorArm64Main.dependsOn(this)
+        }
+        val iosX64Test by getting
+        val iosArm64Test by getting
+        val iosSimulatorArm64Test by getting
+        val iosTest by creating {
+            dependsOn(commonTest)
+            iosX64Test.dependsOn(this)
+            iosArm64Test.dependsOn(this)
+            iosSimulatorArm64Test.dependsOn(this)
         }
     }
 }
 
 android {
-    namespace = "pers.apollokwok.kdatastore"
+    namespace = "pers.shawxingkwok.kdatastore"
     compileSdk = 33
+    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
+
     defaultConfig {
         minSdk = 21
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
