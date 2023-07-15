@@ -7,7 +7,7 @@ import pers.shawxingkwok.ktutil.KReadOnlyProperty
 
 public actual abstract class KDataStore actual constructor(
     @PublishedApi internal actual val fileName: String,
-    @PublishedApi internal actual val cypher: Cypher?,
+    @PublishedApi internal actual val cipher: Cipher?,
     @PublishedApi internal actual val handlerScope: CoroutineScope,
     ioScope: CoroutineScope,
 ) {

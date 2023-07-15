@@ -1,8 +1,11 @@
+@file:Suppress("UnstableApiUsage")
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.nativecoroutines)
     alias(libs.plugins.ksp)
     alias(libs.plugins.android.library)
+    alias(libs.plugins.publish)
 }
 
 kotlin {
@@ -86,5 +89,17 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+}
+
+// publish
+mavenPublishing {
+    // TODO remove suffix
+    coordinates("io.github.shawxingkwok", "kdatastore", "1.0.0-SNAPSHOT")
+
+    pom {
+        name.set("Personal andorid data store extension")
+        description.set("")
+        inceptionYear.set("2023")
     }
 }

@@ -4,21 +4,22 @@ import kotlinx.coroutines.*
 import pers.shawxingkwok.kdatastore.hidden.DefaultIOScope
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 
-/*
+/**
  * An extended data store with little configuration, easy encryption, exception safety
  * and extensive supported types.
  *
- * See tutorial in my [ITWorks](https://shawxingkwok.github.io/ITWorks/). It's inside
- * **Android** group in version `1.0.0` and would be moved to **KMM** in version `1.1.0`.
+ * See [document](https://shawxingkwok.github.io/ITWorks/docs/android/kdatastore/en/) which
+ * would be moved to the new [page](https://shawxingkwok.github.io/ITWorks/docs/multiplatform-mobile/kdatastore/en/)
+ * since version `1.1.0`.
  */
 public expect abstract class KDataStore(
     fileName: String,
-    cypher: Cypher? = null,
+    cipher: Cipher? = null,
     handlerScope: CoroutineScope = MainScope(),
     ioScope: CoroutineScope = DefaultIOScope,
 ) {
     internal val fileName: String
-    internal val cypher: Cypher?
+    internal val cipher: Cipher?
     internal val handlerScope: CoroutineScope
 
     //region reset delete exists
@@ -45,13 +46,10 @@ public expect abstract class KDataStore(
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T>>
 
-    //todo: switch to stream when 'Json.encodeToStream' is not experimental.
+    //todo: switch to stream when 'Json.encodeToStream' is supported.
     @PublishedApi
     internal inline fun <reified T> _storeSerializable(default: T): KReadOnlyProperty<KDataStore, KDSFlow<T>>
 
-    /**
-     * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [S];
-     */
     protected inline fun <reified T: Any, reified S> store(
         default: T,
         noinline convert: (T) -> S,
@@ -59,9 +57,6 @@ public expect abstract class KDataStore(
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T>>
 
-    /**
-     * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [S];
-     */
     protected inline fun <reified T: Any, reified S> storeNullable(
         noinline convert: (T) -> S,
         noinline recover: (S) -> T,

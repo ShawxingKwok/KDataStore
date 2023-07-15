@@ -18,7 +18,7 @@ import java.io.IOException
 
 public actual abstract class KDataStore actual constructor(
     @PublishedApi internal actual val fileName: String,
-    @PublishedApi internal actual val cypher: Cypher?,
+    @PublishedApi internal actual val cipher: Cipher?,
     @PublishedApi internal actual val handlerScope: CoroutineScope,
     ioScope: CoroutineScope,
 ) {
@@ -164,18 +164,18 @@ public actual abstract class KDataStore actual constructor(
             default = default,
             getKey = ::stringPreferencesKey,
             convert =
-                if (cypher != null)
+                if (cipher != null)
                     { t ->
                         val oldBytes = convert(t).encodeToByteArray()
-                        val newBytes = cypher.encrypt(oldBytes)
+                        val newBytes = cipher.encrypt(oldBytes)
                         Json.encodeToString(ByteArraySerializer(), newBytes)
                     }
                 else
                     convert,
             recover =
-                if (cypher != null) { data: String ->
+                if (cipher != null) { data: String ->
                     val oldBytes = Json.decodeFromString(ByteArraySerializer(), data)
-                    val newBytes = cypher.decrypt(oldBytes)
+                    val newBytes = cipher.decrypt(oldBytes)
                     Json.encodeToString(ByteArraySerializer(), newBytes)
                         .let(recover)
                 }
