@@ -19,6 +19,10 @@ kotlin {
         }
     }
 
+    android{
+        publishLibraryVariants("release")
+    }
+
     listOf(
         iosX64(),
         iosArm64(),
