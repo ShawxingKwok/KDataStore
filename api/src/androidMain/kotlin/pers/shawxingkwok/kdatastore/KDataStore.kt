@@ -162,7 +162,6 @@ public actual abstract class KDataStore actual constructor(
     : KReadOnlyProperty<KDataStore, KDSFlow<T>> =
         FlowDelegate<T>(
             default = default,
-            getKey = ::stringPreferencesKey,
             convert =
                 if (cipher != null)
                     { t ->

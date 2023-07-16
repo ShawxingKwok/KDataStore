@@ -3,6 +3,7 @@ package pers.shawxingkwok.kdatastore
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.asLiveData
 import kotlinx.coroutines.flow.*
@@ -15,7 +16,6 @@ import kotlin.reflect.KProperty
 @PublishedApi
 internal inline fun <reified T> FlowDelegate(
     default: T,
-    noinline getKey: (String) -> Preferences.Key<*>,
     noinline convert: (T & Any) -> String,
     noinline recover: (String) -> T & Any,
 )
@@ -24,12 +24,11 @@ internal inline fun <reified T> FlowDelegate(
         lateinit var flow: KDSFlow<T>
 
         override fun onDelegate(thisRef: KDataStore, property: KProperty<*>) {
-            @Suppress("UNCHECKED_CAST")
-            val key = getKey(property.name) as Preferences.Key<Any>
+            val key = stringPreferencesKey(property.name)
             val src = thisRef.initialPrefs[key]
             val initialValue =
                 if (src == null) default
-                else recover(src as String)
+                else recover(src)
 
             var onStart = true
             var everCorrupted = false
@@ -52,7 +51,7 @@ internal inline fun <reified T> FlowDelegate(
                 )
             }
 
-            val save: suspend (MutablePreferences, Any?) -> Unit =
+            val save: suspend (MutablePreferences, String?) -> Unit =
                 { prefs, convertedValue ->
                     if (convertedValue == null)
                         prefs -= key
@@ -70,7 +69,7 @@ internal inline fun <reified T> FlowDelegate(
                     onStart
                 }
                 .onEach { value ->
-                    val converted: Any? =
+                    val converted: String? =
                         // default is null when value is nullable
                         if (value == default) null
                         else convert(value!!)

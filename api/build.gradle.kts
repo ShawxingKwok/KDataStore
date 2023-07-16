@@ -2,19 +2,14 @@
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.nativecoroutines)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.android.library)
     alias(libs.plugins.publish)
 }
 
+@OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
 kotlin {
+    targetHierarchy.default()
     explicitApiWarning()
-
-    android()
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
 
     android {
         compilations.all {
@@ -24,8 +19,14 @@ kotlin {
         }
     }
 
-    sourceSets.all {
-        languageSettings.optIn("kotlin.experimental.ExperimentalObjCName")
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach {
+        it.binaries.framework {
+            baseName = "api"
+        }
     }
 
     sourceSets {
@@ -34,11 +35,11 @@ kotlin {
 //                implementation(libs.androidx.datastore.preferences.core)
 //                api(libs.androidx.datastore.core.okio)
                 implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+               implementation ("io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT")
+                implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
                 // TODO remove suffix
-                implementation ("io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT")
                 //noinspection GradleDependency
 //                implementation ("androidx.datastore:datastore-preferences-core:1.0.0")
-                implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
             }
         }
 
@@ -48,32 +49,12 @@ kotlin {
             }
         }
 
-        val androidMain by getting{
+        val androidMain by getting {
             dependencies{
                 implementation ("androidx.datastore:datastore-preferences:1.0.0")
                 implementation ("io.github.shawxingkwok:android-util-core:1.0.0-SNAPSHOT")
                 implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.6.1")
             }
-        }
-
-        val androidUnitTest by getting
-        val iosX64Main by getting
-        val iosArm64Main by getting
-        val iosSimulatorArm64Main by getting
-        val iosMain by creating {
-            dependsOn(commonMain)
-            iosX64Main.dependsOn(this)
-            iosArm64Main.dependsOn(this)
-            iosSimulatorArm64Main.dependsOn(this)
-        }
-        val iosX64Test by getting
-        val iosArm64Test by getting
-        val iosSimulatorArm64Test by getting
-        val iosTest by creating {
-            dependsOn(commonTest)
-            iosX64Test.dependsOn(this)
-            iosArm64Test.dependsOn(this)
-            iosSimulatorArm64Test.dependsOn(this)
         }
     }
 }
@@ -98,8 +79,14 @@ mavenPublishing {
     coordinates("io.github.shawxingkwok", "kdatastore", "1.0.0-SNAPSHOT")
 
     pom {
-        name.set("Personal andorid data store extension")
-        description.set("")
+        name.set("KDataStore")
+        description.set("Personal data store extension")
         inceptionYear.set("2023")
+        url.set("https://github.com/ShawxingKwok/${name.get()}/")
+
+        scm{
+            connection.set("scm:git:git://github.com/ShawxingKwok/${name.get()}.git")
+            developerConnection.set("scm:git:ssh://git@github.com/ShawxingKwok/${name.get()}.git")
+        }
     }
 }

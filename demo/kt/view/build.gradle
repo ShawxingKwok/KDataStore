@@ -54,7 +54,7 @@ tasks.withType(KotlinCompile).configureEach{
 
 dependencies {
     implementation(project(":demo:kt:settings"))
-    implementation(project(":api")) // 'io.github.shawxingkwok:android-kdatastore:1.0.0'
+    implementation(project(":api"))
     implementation 'io.github.shawxingkwok:android-util-view:1.0.0-SNAPSHOT'
 }
 //endregion
