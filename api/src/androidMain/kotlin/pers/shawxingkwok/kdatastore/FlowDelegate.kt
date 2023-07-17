@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.*
 import pers.shawxingkwok.kdatastore.hidden.MLog
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import java.io.IOException
+import java.lang.Error
 import kotlin.reflect.KProperty
 
 // Use inline to help check cast
@@ -104,7 +105,7 @@ internal inline fun <reified T> FlowDelegate(
                                 prefs -= thisRef.ioExceptionRecordsKey
                         }
                     } catch (e: IOException) {
-                        MLog.e("${errMsg}bak.", tr = e)
+                        MLog.e("${errMsg}bak.", e)
                     }
                 }
                 .launchIn(thisRef.handlerScope)
