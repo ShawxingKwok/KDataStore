@@ -22,7 +22,7 @@ public expect abstract class KDataStore(
     internal val cipher: Cipher?
     internal val handlerScope: CoroutineScope
 
-    //region reset delete exists
+    //region reset delete exist
     @RequiresOptIn
     @Retention(AnnotationRetention.BINARY)
     public annotation class CautiousApi()

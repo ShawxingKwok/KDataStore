@@ -132,7 +132,7 @@ public actual abstract class KDataStore actual constructor(
     }
     //endregion
 
-    //region delicate functions: reset delete exists
+    //region reset delete exist
     @RequiresOptIn
     @Retention(AnnotationRetention.BINARY)
     public actual annotation class CautiousApi actual constructor()
@@ -165,18 +165,17 @@ public actual abstract class KDataStore actual constructor(
             convert =
                 if (cipher != null)
                     { t ->
-                        val oldBytes = convert(t).encodeToByteArray()
-                        val newBytes = cipher.encrypt(oldBytes)
-                        Json.encodeToString(ByteArraySerializer(), newBytes)
+                        val utf8Bytes = convert(t).encodeToByteArray()
+                        val base64Bytes = cipher.encrypt(utf8Bytes)
+                        Json.encodeToString(ByteArraySerializer(), base64Bytes)
                     }
                 else
                     convert,
             recover =
                 if (cipher != null) { data: String ->
-                    val oldBytes = Json.decodeFromString(ByteArraySerializer(), data)
-                    val newBytes = cipher.decrypt(oldBytes)
-                    Json.encodeToString(ByteArraySerializer(), newBytes)
-                        .let(recover)
+                    val base64Bytes = Json.decodeFromString(ByteArraySerializer(), data)
+                    val utf8Bytes = cipher.decrypt(base64Bytes)
+                    String(utf8Bytes).let(recover)
                 }
                 else
                     recover,

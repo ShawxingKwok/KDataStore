@@ -23,6 +23,7 @@ kotlin {
         publishLibraryVariants("release")
     }
 
+    /*
     listOf(
         iosX64(),
         iosArm64(),
@@ -32,6 +33,7 @@ kotlin {
             baseName = "api"
         }
     }
+    */
 
     sourceSets {
         val commonMain by getting {
