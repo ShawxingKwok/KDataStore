@@ -1,9 +1,12 @@
 @file:Suppress("UnstableApiUsage")
 
+import org.gradle.internal.impldep.org.junit.runner.RunWith
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
     alias(libs.plugins.publish)
+    id ("kotlinx-serialization")
 }
 
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
@@ -60,6 +63,27 @@ kotlin {
                 implementation ("androidx.datastore:datastore-preferences:1.0.0")
                 implementation ("io.github.shawxingkwok:android-util-core:1.0.0-SNAPSHOT")
                 implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.6.1")
+            }
+        }
+
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(kotlin("test-junit"))
+                implementation("junit:junit:4.13.2")
+                implementation("androidx.test:core:1.5.0")
+                implementation("androidx.test:runner:1.5.2")
+                implementation ("junit:junit:4.13.2")
+                implementation ("androidx.test.ext:junit:1.1.5")
+                implementation ("androidx.test.espresso:espresso-core:3.5.1")
+
+                implementation(kotlin("test-junit"))
+                implementation("junit:junit:4.13")
+                implementation("androidx.test:core:1.5.0")
+                implementation("androidx.test:runner:1.5.2")
+                implementation("org.mockito.kotlin:mockito-kotlin:2.2.10")
+                implementation("org.robolectric:robolectric:4.5.1")
+                implementation("org.json:json:20210307")
+                implementation("androidx.core:core-ktx:1.10.1")
             }
         }
     }

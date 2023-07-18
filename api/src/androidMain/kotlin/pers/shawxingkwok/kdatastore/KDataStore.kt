@@ -193,6 +193,7 @@ public actual abstract class KDataStore actual constructor(
             Long::class -> _storeAny(default, Any::toString, String::toLong)
             Float::class -> _storeAny(default, Any::toString, String::toFloat)
             Double::class -> _storeAny(default, Any::toString, String::toDouble)
+            String::class -> _storeAny(default, Any::toString) { it }
             else -> _storeAny(default, Json::encodeToString){ Json.decodeFromString(it) }
         }
         as KReadOnlyProperty<KDataStore, KDSFlow<T>>

@@ -1,8 +1,8 @@
 package pers.shawxingkwok.kdatastore.hidden
 
 import android.util.Log
-import pers.shawxingkwok.androidutil.BuildConfig
 import pers.shawxingkwok.androidutil.KLog
+import pers.shawxingkwok.kdatastore.BuildConfig
 
 @PublishedApi
 internal actual object MLog : KLog(BuildConfig.DEBUG, "KDS") {
