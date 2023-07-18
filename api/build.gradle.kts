@@ -44,7 +44,7 @@ kotlin {
 //                implementation(libs.androidx.datastore.preferences.core)
 //                api(libs.androidx.datastore.core.okio)
                 implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
-               implementation ("io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT")
+                implementation ("io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT")
                 implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
                 // TODO remove suffix
                 //noinspection GradleDependency
@@ -67,24 +67,6 @@ kotlin {
         }
 
         val androidUnitTest by getting {
-            dependencies {
-                implementation(kotlin("test-junit"))
-                implementation("junit:junit:4.13.2")
-                implementation("androidx.test:core:1.5.0")
-                implementation("androidx.test:runner:1.5.2")
-                implementation ("junit:junit:4.13.2")
-                implementation ("androidx.test.ext:junit:1.1.5")
-                implementation ("androidx.test.espresso:espresso-core:3.5.1")
-
-                implementation(kotlin("test-junit"))
-                implementation("junit:junit:4.13")
-                implementation("androidx.test:core:1.5.0")
-                implementation("androidx.test:runner:1.5.2")
-                implementation("org.mockito.kotlin:mockito-kotlin:2.2.10")
-                implementation("org.robolectric:robolectric:4.5.1")
-                implementation("org.json:json:20210307")
-                implementation("androidx.core:core-ktx:1.10.1")
-            }
         }
     }
 }

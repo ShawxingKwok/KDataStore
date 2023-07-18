@@ -23,7 +23,7 @@ public actual abstract class KDataStore actual constructor(
     ioScope: CoroutineScope,
 ) {
     @PublishedApi
-    internal val kdsFlows: MutableList<KDSFlow<*>> = mutableListOf<KDSFlow<*>>()
+    internal val kdsFlows: MutableList<KDSFlow<*>> = mutableListOf()
 
     //region getFile, getBackupFile
     private fun getFile(): File {
@@ -156,10 +156,10 @@ public actual abstract class KDataStore actual constructor(
 
     //region converted delegates
     @PublishedApi
-    internal actual inline fun <reified T> _storeAny(
+    internal actual fun <T> _store(
         default: T,
-        noinline convert: (T & Any) -> String,
-        noinline recover: (String) -> T & Any,
+        convert: (T & Any) -> String,
+        recover: (String) -> T & Any,
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T>> =
         FlowDelegate<T>(
@@ -186,28 +186,28 @@ public actual abstract class KDataStore actual constructor(
     //todo: switch to stream when 'Json.encodeToStream' is not experimental.
     @Suppress("UNCHECKED_CAST")
     @PublishedApi
-    internal actual inline fun <reified T> _storeSerializable(default: T): KReadOnlyProperty<KDataStore, KDSFlow<T>> =
+    internal actual inline fun <reified T> _store(default: T): KReadOnlyProperty<KDataStore, KDSFlow<T>> =
         when(T::class){
-            Boolean::class -> _storeAny(default, Any::toString, String::toBoolean)
-            Int::class -> _storeAny(default, Any::toString, String::toInt)
-            Long::class -> _storeAny(default, Any::toString, String::toLong)
-            Float::class -> _storeAny(default, Any::toString, String::toFloat)
-            Double::class -> _storeAny(default, Any::toString, String::toDouble)
-            String::class -> _storeAny(default, Any::toString) { it }
-            else -> _storeAny(default, Json::encodeToString){ Json.decodeFromString(it) }
+            Boolean::class -> _store(default, Any::toString, String::toBoolean)
+            Int::class -> _store(default, Any::toString, String::toInt)
+            Long::class -> _store(default, Any::toString, String::toLong)
+            Float::class -> _store(default, Any::toString, String::toFloat)
+            Double::class -> _store(default, Any::toString, String::toDouble)
+            String::class -> _store(default, Any::toString) { it }
+            else -> _store(default, Json::encodeToString){ Json.decodeFromString(it) }
         }
         as KReadOnlyProperty<KDataStore, KDSFlow<T>>
 
     /*
      * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [S];
      */
-    protected actual inline fun <reified T: Any, reified S> store(
+    protected actual inline fun <T: Any, reified S> store(
         default: T,
         noinline convert: (T) -> S,
         noinline recover: (S) -> T,
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T>> =
-        _storeAny(
+        _store(
             default = default,
             convert = { Json.encodeToString(convert(it)) },
             recover = { Json.decodeFromString<S>(it).let(recover) }
@@ -216,21 +216,21 @@ public actual abstract class KDataStore actual constructor(
     /*
      * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [S];
      */
-    protected actual inline fun <reified T: Any, reified S> storeNullable(
+    protected actual inline fun <T: Any, reified S> storeNullable(
         noinline convert: (T) -> S,
         noinline recover: (S) -> T,
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T?>> =
-        _storeAny(
+        _store(
             default = null,
             convert = { Json.encodeToString(convert(it)) },
             recover = { Json.decodeFromString<S>(it).let(recover) }
         )
 
     protected actual inline fun <reified T: Any> store(default: T): KReadOnlyProperty<KDataStore, KDSFlow<T>> =
-        _storeSerializable(default)
+        _store(default)
 
     protected actual inline fun <reified T: Any> storeNullable(): KReadOnlyProperty<KDataStore, KDSFlow<T?>> =
-        _storeSerializable(null)
+        _store(null)
     //endregion
 }

@@ -15,10 +15,10 @@ import kotlin.reflect.KProperty
 
 // Use inline to help check cast
 @PublishedApi
-internal inline fun <reified T> FlowDelegate(
+internal fun <T> FlowDelegate(
     default: T,
-    noinline convert: (T & Any) -> String,
-    noinline recover: (String) -> T & Any,
+    convert: (T & Any) -> String,
+    recover: (String) -> T & Any,
 )
 : KReadOnlyProperty<KDataStore, KDSFlow<T>> =
     object : KReadOnlyProperty<KDataStore, KDSFlow<T>> {

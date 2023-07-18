@@ -39,25 +39,25 @@ public expect abstract class KDataStore(
 
     //region converted delegates
     @PublishedApi
-    internal inline fun <reified T> _storeAny(
+    internal fun <T> _store(
         default: T,
-        noinline convert: (T & Any) -> String,
-        noinline recover: (String) -> T & Any,
+        convert: (T & Any) -> String,
+        recover: (String) -> T & Any,
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T>>
 
     //todo: switch to stream when 'Json.encodeToStream' is supported.
     @PublishedApi
-    internal inline fun <reified T> _storeSerializable(default: T): KReadOnlyProperty<KDataStore, KDSFlow<T>>
+    internal inline fun <reified T> _store(default: T): KReadOnlyProperty<KDataStore, KDSFlow<T>>
 
-    protected inline fun <reified T: Any, reified S> store(
+    protected inline fun <T: Any, reified S> store(
         default: T,
         noinline convert: (T) -> S,
         noinline recover: (S) -> T,
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T>>
 
-    protected inline fun <reified T: Any, reified S> storeNullable(
+    protected inline fun <T: Any, reified S> storeNullable(
         noinline convert: (T) -> S,
         noinline recover: (S) -> T,
     )
