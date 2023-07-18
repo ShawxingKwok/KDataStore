@@ -1,8 +1,14 @@
 package pers.shawxingkwok.kdatastore.demo.viewjava;
 
+import android.annotation.SuppressLint;
+import android.view.ViewGroup;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.recyclerview.widget.RecyclerView;
+import org.jetbrains.annotations.NotNull;
+import pers.shawxingkwok.kdatastore.KDataStore;
 import pers.shawxingkwok.kdatastore.demo.settings.Settings;
 import pers.shawxingkwok.kdatastore.demo.viewjava.databinding.ActivityMainBinding;
 

@@ -8,6 +8,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Assert.*
+import pers.shawxingkwok.kdatastore.KDataStore
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -21,8 +22,11 @@ class ExampleInstrumentedTest {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         assertEquals("pers.shawxingkwok.kdatastore.demo.settings.test", appContext.packageName)
-        Log.d("KLOG", SettingsTest.fa.value.toString())
-        SettingsTest.fa.value = Sub(2)
         runBlocking { delay(1000) }
+        if (Settings.exist()) {
+            // ...
+            @OptIn(KDataStore.CautiousApi::class)
+            Settings.delete()
+        }
     }
 }

@@ -137,6 +137,7 @@ public actual abstract class KDataStore actual constructor(
     @Retention(AnnotationRetention.BINARY)
     public actual annotation class CautiousApi actual constructor()
 
+    @CautiousApi
     public actual fun delete() {
         getFile().delete()
         getBackupFile().delete()
@@ -147,6 +148,7 @@ public actual abstract class KDataStore actual constructor(
         return getFile().exists()
     }
 
+    @CautiousApi
     public actual fun reset(){
         kdsFlows.forEach { it.reset() }
     }
