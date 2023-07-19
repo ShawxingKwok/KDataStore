@@ -1,6 +1,7 @@
 package pers.shawxingkwok.kdatastore.demo.viewjava;
 
 import android.annotation.SuppressLint;
+import android.util.Log;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -26,7 +27,6 @@ public class MainActivity extends AppCompatActivity {
         // link `isDarkMode` with `theme` via `liveData`
         Settings.isDarkMode().getLiveData().observe(this, (isDark)->{
             int mode;
-
             if (isDark == null)
                 mode = AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM;
             else if (isDark)

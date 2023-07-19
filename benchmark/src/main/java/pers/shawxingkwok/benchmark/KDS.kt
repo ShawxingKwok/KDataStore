@@ -1,13 +1,8 @@
-package pers.shawxingkwok.kdatastore.demo.settings
+package pers.shawxingkwok.benchmark
 
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
-import pers.shawxingkwok.kdatastore.KDSFlow
 import pers.shawxingkwok.kdatastore.KDataStore
-import kotlin.reflect.KProperty1
-import kotlin.reflect.full.declaredMemberProperties
 
-object BenchMarkKDS: KDataStore("benchmark") {
+object KDS: KDataStore("benchmark") {
     val s1 by store("")
     val s2 by store("")
     val s3 by store("")

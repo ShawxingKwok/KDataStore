@@ -1,19 +1,20 @@
 plugins {
-    id 'com.android.library'
+    id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    id 'kotlinx-serialization' // additional
 }
 
 android {
-    namespace 'pers.shawxingkwok.kdatastore.demo.settings'
+    namespace 'pers.shawxingkwok.benchmark'
     compileSdk 33
 
     defaultConfig {
+        applicationId "pers.shawxingkwok.benchmark"
         minSdk 24
         targetSdk 33
+        versionCode 1
+        versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles "consumer-rules.pro"
     }
 
     buildTypes {
@@ -32,21 +33,19 @@ android {
 }
 
 dependencies {
+
     implementation 'androidx.core:core-ktx:1.10.1'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.9.0'
-
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-}
 
-// additional
-dependencies {
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1"
-    implementation 'io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT'
-    implementation('io.github.shawxingkwok:android-util-core:1.0.0-SNAPSHOT')
+    implementation 'com.tencent:mmkv:1.3.0'
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
     implementation(project(":api"))
-//    implementation('io.github.shawxingkwok:kdatastore:1.0.0-SNAPSHOT')
-    //
+    implementation('io.github.shawxingkwok:android-util-core:1.0.0-SNAPSHOT')
+    implementation('io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT')
 }

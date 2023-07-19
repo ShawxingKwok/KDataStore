@@ -65,9 +65,6 @@ kotlin {
                 implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.6.1")
             }
         }
-
-        val androidUnitTest by getting {
-        }
     }
 }
 
