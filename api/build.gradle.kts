@@ -84,18 +84,22 @@ android {
 
 // publish
 mavenPublishing {
-    // TODO remove suffix
-    coordinates("io.github.shawxingkwok", "kdatastore", "1.0.0-SNAPSHOT")
+    val isSNAPSHOT = true
+    val version = "1.0.0"
+    val artifactId = "kdatastore"
+
+    coordinates("io.github.shawxingkwok", artifactId, if (isSNAPSHOT) "$version-SNAPSHOT" else version)
 
     pom {
-        name.set("KDataStore")
+        val repo = "KDataStore"
+        name.set(repo)
         description.set("Personal data store extension")
         inceptionYear.set("2023")
-        url.set("https://github.com/ShawxingKwok/${name.get()}/")
 
+        url.set("https://github.com/ShawxingKwok/$repo/")
         scm{
-            connection.set("scm:git:git://github.com/ShawxingKwok/${name.get()}.git")
-            developerConnection.set("scm:git:ssh://git@github.com/ShawxingKwok/${name.get()}.git")
+            connection.set("scm:git:git://github.com/ShawxingKwok/$repo.git")
+            developerConnection.set("scm:git:ssh://git@github.com/ShawxingKwok/$repo.git")
         }
     }
 }
