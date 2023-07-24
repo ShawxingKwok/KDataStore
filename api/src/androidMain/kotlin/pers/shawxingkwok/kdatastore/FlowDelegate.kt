@@ -11,7 +11,6 @@ import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import java.io.IOException
 import kotlin.reflect.KProperty
 
-// Use inline to help check cast
 @PublishedApi
 internal fun <T> FlowDelegate(
     default: T,
