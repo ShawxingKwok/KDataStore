@@ -1,7 +1,6 @@
 package pers.shawxingkwok.kdatastore
 
 import androidx.datastore.preferences.core.MutablePreferences
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.LiveData
@@ -10,7 +9,6 @@ import kotlinx.coroutines.flow.*
 import pers.shawxingkwok.kdatastore.hidden.MLog
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import java.io.IOException
-import java.lang.Error
 import kotlin.reflect.KProperty
 
 // Use inline to help check cast

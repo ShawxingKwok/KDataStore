@@ -170,7 +170,7 @@ public actual abstract class KDataStore actual constructor(
         recover: (String) -> T & Any,
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T>> =
-        FlowDelegate<T>(
+        FlowDelegate(
             default = default,
             convert =
                 if (cipher != null)
