@@ -5,7 +5,7 @@ import pers.shawxingkwok.kdatastore.hidden.DefaultIOScope
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 
 /**
- * An extended data store with little configuration, easy encryption, exception safety
+ * An extended data store with little configuration, easy crypto, exception safety
  * and extensive supported types.
  *
  * See [document](https://shawxingkwok.github.io/ITWorks/docs/android/kdatastore/en/) which

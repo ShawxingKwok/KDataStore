@@ -46,7 +46,5 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1"
     implementation 'io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT'
     implementation('io.github.shawxingkwok:android-util-core:1.0.0-SNAPSHOT')
-    implementation(project(":api"))
-//    implementation('io.github.shawxingkwok:kdatastore:1.0.0-SNAPSHOT')
-    //
+    api(project(":api")) // "io.github.shawxingkwok:kdatastore:1.0.0"
 }

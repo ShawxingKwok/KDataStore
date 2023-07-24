@@ -16,6 +16,14 @@ import pers.shawxingkwok.ktutil.allDo
 import java.io.File
 import java.io.IOException
 
+/**
+ * An extended data store with little configuration, easy crypto, exception safety
+ * and extensive supported types.
+ *
+ * See [document](https://shawxingkwok.github.io/ITWorks/docs/android/kdatastore/en/) which
+ * would be moved to the new [page](https://shawxingkwok.github.io/ITWorks/docs/multiplatform-mobile/kdatastore/en/)
+ * since version `1.1.0`.
+ */
 public actual abstract class KDataStore actual constructor(
     @PublishedApi internal actual val fileName: String,
     @PublishedApi internal actual val cipher: Cipher?,
