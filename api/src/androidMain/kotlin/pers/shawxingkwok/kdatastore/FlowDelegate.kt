@@ -49,13 +49,12 @@ internal fun <T> FlowDelegate(
                 )
             }
 
-            val save: suspend (MutablePreferences, String?) -> Unit =
-                { prefs, convertedValue ->
-                    if (convertedValue == null)
-                        prefs -= key
-                    else
-                        prefs[key] = convertedValue
-                }
+            fun save(prefs: MutablePreferences, convertedValue: String?){
+                if (convertedValue == null)
+                    prefs -= key
+                else
+                    prefs[key] = convertedValue
+            }
 
             val errMsg = "Encounters IOException when writing data to dataStore ${thisRef.fileName}."
 
