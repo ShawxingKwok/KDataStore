@@ -23,8 +23,7 @@ internal fun <T> FlowDelegate(
 
         override fun onDelegate(thisRef: KDataStore, property: KProperty<*>) {
             require(!thisRef.resetCalled) {
-                "Use `delete` instead if you want to reset ${thisRef.javaClass.canonicalName} before all " +
-                "its data properties are declared."
+                "Use `reset` after all data properties are declared in ${thisRef.javaClass.canonicalName}."
             }
 
             val key = stringPreferencesKey(property.name)
