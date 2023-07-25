@@ -49,11 +49,12 @@ internal fun <T> FlowDelegate(
                 )
             }
 
-            fun save(prefs: MutablePreferences, convertedValue: String?){
-                if (convertedValue == null)
+            fun save(prefs: MutablePreferences, value: T){
+                if (value == default)
                     prefs -= key
                 else
-                    prefs[key] = convertedValue
+                    // default is value when nullable
+                    prefs[key] = convert(value!!)
             }
 
             val errMsg = "Encounters IOException when writing data to dataStore ${thisRef.fileName}."
@@ -66,15 +67,10 @@ internal fun <T> FlowDelegate(
                     onStart
                 }
                 .onEach { value ->
-                    val converted: String? =
-                        // default is null when value is nullable
-                        if (value == default) null
-                        else convert(value!!)
-
                     var corrupted = false
 
                     try {
-                        thisRef.frontStore.edit { save(it, converted) }
+                        thisRef.frontStore.edit { save(it, value) }
                     } catch (e: IOException) {
                         MLog.e(errMsg, e)
                         everCorrupted = true
@@ -83,7 +79,7 @@ internal fun <T> FlowDelegate(
 
                     try {
                         thisRef.backupStore.edit { prefs ->
-                            save(prefs, converted)
+                            save(prefs, value)
 
                             if (!everCorrupted) return@edit
 
