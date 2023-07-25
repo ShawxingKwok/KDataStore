@@ -156,8 +156,12 @@ public actual abstract class KDataStore actual constructor(
         return getFile().exists()
     }
 
+    internal actual var resetCalled = false
+        private set
+
     @CautiousApi
     public actual fun reset(){
+        resetCalled = true
         kdsFlows.forEach { it.reset() }
     }
     //endregion

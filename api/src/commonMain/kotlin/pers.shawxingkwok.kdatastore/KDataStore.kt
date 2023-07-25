@@ -33,6 +33,9 @@ public expect abstract class KDataStore(
     // todo: consider including 'backupFile.exists'
     public fun exist(): Boolean
 
+    internal var resetCalled: Boolean
+        private set
+
     @CautiousApi
     public fun reset()
     //endregion
