@@ -11,8 +11,7 @@ import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import java.io.IOException
 import kotlin.reflect.KProperty
 
-@PublishedApi
-internal fun <T> FlowDelegate(
+internal fun <T> KDSFlowDelegate(
     default: T,
     convert: (T & Any) -> String,
     recover: (String) -> T & Any,

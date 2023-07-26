@@ -25,12 +25,11 @@ import java.io.IOException
  * since version `1.1.0`.
  */
 public actual abstract class KDataStore actual constructor(
-    @PublishedApi internal actual val fileName: String,
-    @PublishedApi internal actual val cipher: Cipher?,
-    @PublishedApi internal actual val handlerScope: CoroutineScope,
+    internal actual val fileName: String,
+    internal actual val cipher: Cipher?,
+    internal actual val handlerScope: CoroutineScope,
     ioScope: CoroutineScope,
 ) {
-    @PublishedApi
     internal val kdsFlows: MutableList<KDSFlow<*>> = mutableListOf()
 
     //region getFile, getBackupFile
@@ -174,7 +173,7 @@ public actual abstract class KDataStore actual constructor(
         recover: (String) -> T & Any,
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T>> =
-        FlowDelegate(
+        KDSFlowDelegate(
             default = default,
             convert =
                 if (cipher != null)
