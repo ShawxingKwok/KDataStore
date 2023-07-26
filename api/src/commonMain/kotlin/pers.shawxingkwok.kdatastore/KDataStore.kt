@@ -55,14 +55,14 @@ public expect abstract class KDataStore(
 
     protected inline fun <T: Any, reified S> store(
         default: T,
-        noinline convert: (T) -> S,
-        noinline recover: (S) -> T,
+        crossinline convert: (T) -> S,
+        crossinline recover: (S) -> T,
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T>>
 
     protected inline fun <T: Any, reified S> storeNullable(
-        noinline convert: (T) -> S,
-        noinline recover: (S) -> T,
+        crossinline convert: (T) -> S,
+        crossinline recover: (S) -> T,
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T?>>
 

@@ -43,7 +43,6 @@ public actual abstract class KDataStore actual constructor(
     //endregion
 
     //region frontStore, backupStore
-    @PublishedApi
     internal val frontStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler {
@@ -55,7 +54,6 @@ public actual abstract class KDataStore actual constructor(
             produceFile = ::getFile,
         )
 
-    @PublishedApi
     internal val backupStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler {
@@ -69,18 +67,15 @@ public actual abstract class KDataStore actual constructor(
     //endregion
 
     //region get initial preferences and fix
-    @PublishedApi
     internal val keys: MutableSet<Preferences.Key<*>> = mutableSetOf()
 
     // only saved in backup store, because if you write again at once when IOException occurs, IOException
     // would probably occur again.
-    @PublishedApi
     internal val ioExceptionRecordsKey: Preferences.Key<Set<String>> =
         stringSetPreferencesKey("ioExceptionRecords$#KDataStore").also { keys += it }
 
     // recovers with ioException records
     // ignores the IOException because reads only once.
-    @PublishedApi
     internal val initialPrefs: Preferences =
         runBlocking {
             val (frontPrefs, backupPrefs) =
@@ -214,8 +209,8 @@ public actual abstract class KDataStore actual constructor(
      */
     protected actual inline fun <T: Any, reified S> store(
         default: T,
-        noinline convert: (T) -> S,
-        noinline recover: (S) -> T,
+        crossinline convert: (T) -> S,
+        crossinline recover: (S) -> T,
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T>> =
         _store(
@@ -228,8 +223,8 @@ public actual abstract class KDataStore actual constructor(
      * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [S];
      */
     protected actual inline fun <T: Any, reified S> storeNullable(
-        noinline convert: (T) -> S,
-        noinline recover: (S) -> T,
+        crossinline convert: (T) -> S,
+        crossinline recover: (S) -> T,
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T?>> =
         _store(
