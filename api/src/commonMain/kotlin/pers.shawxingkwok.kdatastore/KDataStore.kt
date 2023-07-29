@@ -53,14 +53,14 @@ public expect abstract class KDataStore(
     @PublishedApi
     internal inline fun <reified T> _store(default: T): KReadOnlyProperty<KDataStore, KDSFlow<T>>
 
-    protected inline fun <T: Any, reified S> store(
+    protected inline fun <T: Any, reified S: Any> store(
         default: T,
         crossinline convert: (T) -> S,
         crossinline recover: (S) -> T,
     )
     : KReadOnlyProperty<KDataStore, KDSFlow<T>>
 
-    protected inline fun <T: Any, reified S> storeNullable(
+    protected inline fun <T: Any, reified S: Any> storeNullable(
         crossinline convert: (T) -> S,
         crossinline recover: (S) -> T,
     )

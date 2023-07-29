@@ -207,7 +207,7 @@ public actual abstract class KDataStore actual constructor(
     /*
      * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [S];
      */
-    protected actual inline fun <T: Any, reified S> store(
+    protected actual inline fun <T: Any, reified S: Any> store(
         default: T,
         crossinline convert: (T) -> S,
         crossinline recover: (S) -> T,
@@ -222,7 +222,7 @@ public actual abstract class KDataStore actual constructor(
     /*
      * I suggest you convert data to [Pair], [Triple], [List] or other convenient containers of [S];
      */
-    protected actual inline fun <T: Any, reified S> storeNullable(
+    protected actual inline fun <T: Any, reified S: Any> storeNullable(
         crossinline convert: (T) -> S,
         crossinline recover: (S) -> T,
     )
