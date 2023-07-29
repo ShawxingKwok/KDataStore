@@ -9,7 +9,3 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.publish) apply false
 }
-
-tasks.register<Delete>("clean") {
-    delete(rootProject.buildDir)
-}
