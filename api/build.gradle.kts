@@ -41,15 +41,15 @@ kotlin {
             dependencies {
 //                implementation(libs.androidx.datastore.preferences.core)
 //                implementation(libs.androidx.datastore.core.okio)
-                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kt.coroutines.core)
                 implementation(libs.shawxingkwok.kt.util)
-                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kt.serialization.json)
             }
         }
 
         val commonTest by getting {
             dependencies {
-                implementation(libs.kotlin.test)
+                implementation(libs.kt.test)
             }
         }
 

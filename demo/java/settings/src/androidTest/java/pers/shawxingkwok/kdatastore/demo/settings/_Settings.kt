@@ -1,12 +1,17 @@
 package pers.shawxingkwok.kdatastore.demo.settings
 
 import android.content.Context
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
+import org.junit.Test
+import org.junit.runner.RunWith
 import pers.shawxingkwok.androidutil.AppContext
+import pers.shawxingkwok.androidutil.KLog
 import pers.shawxingkwok.kdatastore.KDataStore
 
-object _Settings : KDataStore("settings"){
+@RunWith(AndroidJUnit4::class)
+class _Settings : KDataStore("settings"){
     val isVip by store<Boolean>(false)
 
     init {
@@ -17,23 +22,4 @@ object _Settings : KDataStore("settings"){
             AppContext.deleteSharedPreferences(name)
         }
     }
-}
-
-@Serializable
-class X(var i: Int)
-
-object Settings : KDataStore("settings"){
-    val x by store(X(0))
-}
-
-fun foo() {
-    // wrong
-    Settings.x.value.i++
-
-    // right
-    val newI = Settings.x.value.i + 1
-    Settings.x.value = X(newI)
-
-    // or in this way
-    Settings.x.update { X(it.i + 1) }
 }

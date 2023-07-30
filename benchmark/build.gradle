@@ -39,8 +39,8 @@ dependencies {
     testImplementation libs.junit
     androidTestImplementation(libs.bundles.androidTestBase)
 
-    implementation libs.kotlin.reflect
-    implementation libs.kotlinx.coroutines.core
+    implementation libs.kt.reflect
+    implementation libs.kt.coroutines.core
     implementation(libs.tencent.mmkv)
     implementation(libs.androidx.datastore.preferences)
     implementation(project(":api"))
