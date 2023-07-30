@@ -1,7 +1,8 @@
+//file:noinspection DependencyNotationArgument
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
-    id 'kotlinx-serialization' // additional
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -10,6 +11,7 @@ android {
 
     defaultConfig {
         minSdk 24
+        //noinspection OldTargetApi
         targetSdk 33
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -32,18 +34,15 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.10.1'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.9.0'
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    testImplementation(libs.junit)
+    androidTestImplementation libs.bundles.androidTestBase
 }
 
-// additional
+// KDataStore
 dependencies {
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1"
-    implementation 'io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT'
-    implementation 'io.github.shawxingkwok:android-util-core:1.0.0-SNAPSHOT'
+    implementation libs.kotlinx.coroutines.core
+    implementation libs.kotlinx.serialization.json
+    implementation libs.shawxingkwok.kt.util
+    implementation libs.shawxingkwok.android.util.core
     api(project(":api")) // "io.github.shawxingkwok:kdatastore:1.0.0"
 }

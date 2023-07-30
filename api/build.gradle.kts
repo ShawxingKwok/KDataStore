@@ -40,11 +40,10 @@ kotlin {
         val commonMain by getting {
             dependencies {
 //                implementation(libs.androidx.datastore.preferences.core)
-//                api(libs.androidx.datastore.core.okio)
-                implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
-                implementation ("io.github.shawxingkwok:kt-util:1.0.0-SNAPSHOT")
-                implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
-//                implementation ("androidx.datastore:datastore-preferences-core:1.0.0")
+//                implementation(libs.androidx.datastore.core.okio)
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.shawxingkwok.kt.util)
+                implementation(libs.kotlinx.serialization.json)
             }
         }
 
@@ -56,9 +55,9 @@ kotlin {
 
         val androidMain by getting {
             dependencies{
-                implementation ("androidx.datastore:datastore-preferences:1.0.0")
-                implementation ("io.github.shawxingkwok:android-util-core:1.0.0-SNAPSHOT")
-                implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.6.1")
+                implementation(libs.androidx.datastore.preferences)
+                implementation(libs.shawxingkwok.android.util.core)
+                implementation(libs.androidx.lifecycle.livedata.ktx)
             }
         }
     }

@@ -1,5 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
+import android.annotation.SuppressLint
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.android.kotlin)
@@ -12,6 +14,7 @@ android {
     defaultConfig {
         applicationId = "pers.shawxingkwok.kdatastore.demo.compose"
         minSdk = 24
+        @SuppressLint("OldTargetApi")
         targetSdk = 33
         versionCode = 1
         versionName = "1.0"
