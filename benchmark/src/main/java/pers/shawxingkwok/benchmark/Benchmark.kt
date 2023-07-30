@@ -1,7 +1,6 @@
 package pers.shawxingkwok.benchmark
 
 import android.content.Context
-import android.text.method.TextKeyListener.clear
 import androidx.core.content.edit
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
