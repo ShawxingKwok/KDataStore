@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.asLiveData
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.builtins.ByteArraySerializer
+import kotlinx.serialization.json.Json
 import pers.shawxingkwok.kdatastore.hidden.MLog
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import java.io.IOException
@@ -25,7 +27,8 @@ internal fun <T> KDSFlowDelegate(
                 "Use `reset` after all data properties are declared in ${thisRef.javaClass.canonicalName}."
             }
 
-            val key = stringPreferencesKey(property.name)
+            val keyName = property.name.encryptIfNeeded(thisRef.cipher)
+            val key = stringPreferencesKey(keyName)
             val src = thisRef.initialPrefs[key]
             val initialValue =
                 if (src == null) default

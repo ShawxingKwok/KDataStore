@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.onEach
 import pers.shawxingkwok.androidutil.AppContext
 import pers.shawxingkwok.androidutil.KLog
 import pers.shawxingkwok.kdatastore.KDSFlow
-import pers.shawxingkwok.kdatastore.KDataStore
 import pers.shawxingkwok.ktutil.lazyFast
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties

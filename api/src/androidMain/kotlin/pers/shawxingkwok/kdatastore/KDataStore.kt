@@ -172,20 +172,13 @@ public actual abstract class KDataStore actual constructor(
             default = default,
             convert =
                 if (cipher != null)
-                    { t ->
-                        val utf8Bytes = convert(t).encodeToByteArray()
-                        val base64Bytes = cipher.encrypt(utf8Bytes)
-                        Json.encodeToString(ByteArraySerializer(), base64Bytes)
-                    }
+                    { t -> convert(t).encryptIfNeeded(cipher) }
                 else
                     convert,
             recover =
                 if (cipher != null) { data: String ->
-                    val base64Bytes = Json.decodeFromString(ByteArraySerializer(), data)
-                    val utf8Bytes = cipher.decrypt(base64Bytes)
-                    String(utf8Bytes).let(recover)
-                }
-                else
+                    data.decryptIfNeeded(cipher).let(recover)
+                } else
                     recover,
         )
 
