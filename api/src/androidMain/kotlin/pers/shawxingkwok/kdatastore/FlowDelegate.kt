@@ -6,8 +6,11 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.asLiveData
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.json.Json
+import pers.shawxingkwok.androidutil.KLog
 import pers.shawxingkwok.kdatastore.hidden.MLog
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import java.io.IOException
@@ -27,12 +30,19 @@ internal fun <T> KDSFlowDelegate(
                 "Use `reset` after all data properties are declared in ${thisRef.javaClass.canonicalName}."
             }
 
-            val keyName = property.name.encryptIfNeeded(thisRef.cipher)
-            val key = stringPreferencesKey(keyName)
-            val src = thisRef.initialPrefs[key]
+            val qualifiedPropName = "${thisRef.javaClass.canonicalName}.${property.name}"
+
+            val key = qualifiedPropName
+                .encryptIfNeeded(thisRef.cipher)
+                .let(::stringPreferencesKey)
+
+            thisRef.keys += key
+
             val initialValue =
-                if (src == null) default
-                else recover(src)
+                when(val src = thisRef.initialPrefs[key]){
+                    null -> default
+                    else -> recover(src)
+                }
 
             var onStart = true
             var everCorrupted = false
@@ -42,7 +52,6 @@ internal fun <T> KDSFlowDelegate(
             flow = object : KDSFlow<T>, MutableStateFlow<T> by delegate {
                 init {
                     thisRef.kdsFlows += this
-                    thisRef.keys += key
                 }
 
                 override fun reset() {
@@ -55,58 +64,66 @@ internal fun <T> KDSFlowDelegate(
                 )
             }
 
-            fun save(prefs: MutablePreferences, value: T){
-                if (value == default)
+            fun save(prefs: MutablePreferences, converted: String?){
+                if (converted == null)
                     prefs -= key
                 else
-                    // default is value when nullable
-                    prefs[key] = convert(value!!)
+                    prefs[key] = converted
             }
 
-            val errMsg = "Encounters IOException when writing data to dataStore ${thisRef.fileName}."
+            thisRef.handlerScope.launch {
+                thisRef.initialCorrectingJob.join()
 
-            flow
-                // not writes to the disk when value is the initial
-                .filterNot { value ->
-                    if (onStart && value != initialValue)
-                        onStart = false
-                    onStart
-                }
-                .onEach { value ->
-                    var corrupted = false
-
-                    try {
-                        thisRef.frontStore.edit { save(it, value) }
-                    } catch (e: IOException) {
-                        MLog.e(errMsg, e)
-                        everCorrupted = true
-                        corrupted = true
+                flow
+                    // not writes to the disk when value is the initial
+                    .filterNot { value ->
+                        if (onStart && value != initialValue)
+                            onStart = false
+                        onStart
                     }
+                    .collect { value ->
+                        var corrupted = false
 
-                    try {
-                        thisRef.backupStore.edit { prefs ->
-                            save(prefs, value)
+                        // default is null when nullable
+                        val converted = if (value == default) null else convert(value!!)
 
-                            if (!everCorrupted) return@edit
-
-                            val oldSet = prefs[thisRef.ioExceptionRecordsKey] ?: emptySet()
-
-                            val newSet =
-                                if (corrupted)
-                                    oldSet + property.name
-                                else
-                                    oldSet - property.name
-
-                            if (newSet.any())
-                                prefs[thisRef.ioExceptionRecordsKey] = newSet
-                            else
-                                prefs -= thisRef.ioExceptionRecordsKey
+                        try {
+                            thisRef.frontStore.edit { save(it, converted) }
+                        } catch (e: IOException) {
+                            MLog.d("Encountered io exception when storing ${property.name} with $value.")
+                            everCorrupted = true
+                            corrupted = true
                         }
-                    } catch (e: IOException) {
-                        MLog.e("${errMsg}bak.", e)
+
+                        try {
+                            thisRef.backupStore.edit { prefs ->
+                                save(prefs, converted)
+
+                                if (!everCorrupted) return@edit
+
+                                val oldSet = prefs[thisRef.ioExceptionRecordsKey] ?: emptySet()
+
+                                val newSet =
+                                    if (corrupted)
+                                        oldSet + key.name
+                                    else
+                                        oldSet - key.name
+
+                                if (newSet.any())
+                                    prefs[thisRef.ioExceptionRecordsKey] = newSet
+                                else
+                                    prefs -= thisRef.ioExceptionRecordsKey
+                            }
+                        } catch (e: IOException) {
+                            if (corrupted)
+                                //todo: consider throwing out
+                                MLog.e(
+                                    obj = "Encountered IOException when writing $qualifiedPropName to datastore and its backup.",
+                                    tr = e,
+                                )
+                        }
                     }
-                }
-                .launchIn(thisRef.handlerScope)
+            }
         }
 
         override fun getValue(thisRef: KDataStore, property: KProperty<*>): KDSFlow<T> = flow

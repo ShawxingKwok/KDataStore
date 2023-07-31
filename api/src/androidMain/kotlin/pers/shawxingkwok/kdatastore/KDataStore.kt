@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStoreFile
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -46,7 +48,7 @@ public actual abstract class KDataStore actual constructor(
     internal val frontStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler {
-                MLog.e("DataStore $fileName corrupted.")
+                MLog.i("DataStore $fileName corrupted.")
                 emptyPreferences()
             },
             migrations = emptyList(),
@@ -57,7 +59,7 @@ public actual abstract class KDataStore actual constructor(
     internal val backupStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler {
-                MLog.e("Backup dataStore $fileName.bak corrupted.")
+                MLog.i("Backup dataStore $fileName.bak corrupted.")
                 emptyPreferences()
             },
             migrations = emptyList(),
@@ -72,7 +74,7 @@ public actual abstract class KDataStore actual constructor(
     // only saved in backup store, because if you write again at once when IOException occurs, IOException
     // would probably occur again.
     internal val ioExceptionRecordsKey: Preferences.Key<Set<String>> =
-        stringSetPreferencesKey("ioExceptionRecords$#KDataStore").also { keys += it }
+        stringSetPreferencesKey("ioExceptionRecords").also { keys += it }
 
     // recovers with ioException records
     // ignores the IOException because reads only once.
@@ -89,7 +91,7 @@ public actual abstract class KDataStore actual constructor(
                         .toMutablePreferences()
                     }
 
-            // suppose frontStore corrupted
+            // if frontStore corrupted or is empty
             if (frontPrefs.asMap().none()) {
                 backupPrefs -= ioExceptionRecordsKey
                 return@runBlocking backupPrefs
@@ -98,22 +100,28 @@ public actual abstract class KDataStore actual constructor(
             backupPrefs[ioExceptionRecordsKey]
                 ?.map(::stringPreferencesKey)
                 ?.forEach { key ->
-                    when (val value = backupPrefs[key]) {
+                    val value = backupPrefs[key]
+
+                    when(value) {
                         null -> frontPrefs -= key
                         else -> frontPrefs[key] = value
                     }
+
+                    MLog.d("Update ${key.name.decryptIfNeeded(cipher)} " +
+                            "with ${value?.decryptIfNeeded(cipher) ?: "default"} " +
+                            "from the backup datastore."
+                    )
                 }
 
             frontPrefs
         }
 
     // update disk asyncly
-    init {
+    internal val initialCorrectingJob =
         handlerScope.launch {
             frontStore.updateData { initialPrefs }
             backupStore.updateData { initialPrefs }
         }
-    }
 
     // remove needless keys later
     init {
