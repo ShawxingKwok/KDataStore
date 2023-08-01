@@ -23,7 +23,7 @@ import java.io.IOException
  * and extensive supported types.
  *
  * See [document](https://shawxingkwok.github.io/ITWorks/docs/android/kdatastore/en/) which
- * would be moved to the new [page](https://shawxingkwok.github.io/ITWorks/docs/multiplatform-mobile/kdatastore/en/)
+ * would be moved to the new [page](https://shawxingkwok.github.io/ITWorks/docs/multiplatform/kdatastore/en/)
  * since version `1.1.0`.
  */
 public actual abstract class KDataStore actual constructor(

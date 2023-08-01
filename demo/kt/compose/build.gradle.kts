@@ -64,5 +64,6 @@ dependencies {
 
 // KDataStore
 dependencies {
+    implementation (project(":api")) // "io.github.shawxingkwok:kdatastore:1.0.0"
     implementation(project(":demo:kt:settings"))
 }
