@@ -2,18 +2,22 @@ package pers.shawxingkwok.benchmark
 
 import android.content.Context
 import androidx.core.content.edit
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import pers.shawxingkwok.androidutil.AppContext
 import pers.shawxingkwok.androidutil.KLog
 import pers.shawxingkwok.kdatastore.KDSFlow
+import pers.shawxingkwok.kdatastore.KDataStore
 import pers.shawxingkwok.ktutil.lazyFast
+import java.io.File
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.time.ExperimentalTime
@@ -41,8 +45,7 @@ internal class Benchmark {
             @Suppress("UNCHECKED_CAST")
             prop as KProperty1<KDS, KDSFlow<String>>
             val key = prop.name
-            val value = "GJOPFGHNPIDFQKOP{FMPA"
-
+            val value = "GJOPFGHNPIDFQKOP{FMPA</string>&#10;    "
             sp.edit(true) {
                 putString(key, value)
             }
@@ -108,13 +111,17 @@ internal class Benchmark {
         KLog.w("KDataStore initialization: ${myMeasureTime { kds }}.")
     }
 
-    init {
-        if (!AppContext.preferencesDataStoreFile("benchmark").exists()){
-            // clear others
-            sp.edit(true){ clear() }
-            kv.edit(true) { clear() }
-            runBlocking { ds.edit { it.clear() } }
+    @OptIn(KDataStore.CautiousApi::class)
+    private fun clear(){
+        sp.edit(true){ clear() }
+        kv.edit(true) { clear() }
+        runBlocking { ds.edit { it.clear() } }
+        kds.delete()
+    }
 
+    init {
+        if (sp.all.none()){
+            clear()
             putInitialData()
             KLog.w("Put ${sp.all.size} sets of data fist. Invoke again to test the benchmark.")
         }else {
