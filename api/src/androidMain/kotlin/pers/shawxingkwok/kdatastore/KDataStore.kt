@@ -1,22 +1,25 @@
 package pers.shawxingkwok.kdatastore
 
+import android.annotation.SuppressLint
+import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStoreFile
+import androidx.startup.Initializer
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import pers.shawxingkwok.androidutil.AppContext
+import pers.shawxingkwok.androidutil.KLog
 import pers.shawxingkwok.kdatastore.hidden.MLog
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import pers.shawxingkwok.ktutil.allDo
 import java.io.File
 import java.io.IOException
+import kotlin.system.measureTimeMillis
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
 
 /**
  * An extended data store with little configuration, easy crypto, exception safety
@@ -34,13 +37,25 @@ public actual abstract class KDataStore actual constructor(
 ) {
     internal val kdsFlows: MutableList<KDSFlow<*>> = mutableListOf()
 
+    init {
+        try {
+            KDataStoreInitializer.context
+        }catch (e: NullPointerException){
+            throw NullPointerException(
+                "${KDataStoreInitializer::class.java.canonicalName}.context is not initialized. " +
+                "Include KDataStoreInitializer::class.java in dependencies in that caller module, " +
+                "which may be indirect, with startup-runtime."
+            )
+        }
+    }
+
     //region getFile, getBackupFile
     private fun getFile(): File {
-        return AppContext.preferencesDataStoreFile(fileName)
+        return KDataStoreInitializer.context.preferencesDataStoreFile(fileName)
     }
 
     private fun getBackupFile(): File {
-        return AppContext.preferencesDataStoreFile("$fileName.bak")
+        return KDataStoreInitializer.context.preferencesDataStoreFile("$fileName.bak")
     }
     //endregion
 

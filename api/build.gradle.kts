@@ -58,6 +58,7 @@ kotlin {
                 implementation(libs.androidx.datastore.preferences)
                 implementation(libs.shawxingkwok.android.util.core)
                 implementation(libs.androidx.lifecycle.livedata.ktx)
+                implementation(libs.androidx.startup.runtime)
             }
         }
     }

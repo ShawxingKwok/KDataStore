@@ -2,17 +2,14 @@ package pers.shawxingkwok.benchmark
 
 import android.content.Context
 import androidx.core.content.edit
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import pers.shawxingkwok.androidutil.AppContext
 import pers.shawxingkwok.androidutil.KLog
 import pers.shawxingkwok.kdatastore.KDSFlow
 import pers.shawxingkwok.kdatastore.KDataStore
@@ -24,14 +21,14 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
 @OptIn(ExperimentalTime::class)
-internal class Benchmark {
-    private val sp by lazyFast { AppContext.getSharedPreferences("sp", Context.MODE_PRIVATE) }
+internal class Benchmark(context: Context) {
+    private val sp by lazyFast { context.getSharedPreferences("sp", Context.MODE_PRIVATE) }
     private val kv by lazyFast {
-        MMKV.initialize(AppContext)
+        MMKV.initialize(context)
         MMKV.defaultMMKV()
     }
     private val Context.dataStore by preferencesDataStore("ds")
-    private val ds by lazyFast { AppContext.dataStore }
+    private val ds by lazyFast { context.dataStore }
     private val kds by lazyFast { KDS }
 
     private inline fun myMeasureTime(block: () -> Unit): String{
@@ -120,7 +117,7 @@ internal class Benchmark {
     }
 
     init {
-        if (sp.all.none()){
+        if (context.preferencesDataStoreFile("benchmark").readBytes().none()){
             clear()
             putInitialData()
             KLog.w("Put ${sp.all.size} sets of data fist. Invoke again to test the benchmark.")

@@ -9,6 +9,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // here tests benchmark since androidTest doesn't work on my physical phone.
-        Benchmark()
+        Benchmark(this)
     }
 }
