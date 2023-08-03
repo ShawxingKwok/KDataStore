@@ -109,6 +109,7 @@ public actual abstract class KDataStore actual constructor(
             if (frontPrefs != null && !getCorruptionTagFile().exists())
                 return@runBlocking frontPrefs
 
+            MLog.d("Invoke the backup file because of corruption.")
             val backupPrefs =
                 try {
                     backupStore.data.first()
