@@ -105,6 +105,7 @@ public actual abstract class KDataStore actual constructor(
                 return@runBlocking frontPrefs
 
             MLog.d("Invoke the backup file because there was IOException.")
+
             val backupPrefs =
                 try {
                     backupStore.data.first()
