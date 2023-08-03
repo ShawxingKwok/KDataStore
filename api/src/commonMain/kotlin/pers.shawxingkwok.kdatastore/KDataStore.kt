@@ -21,6 +21,7 @@ public expect abstract class KDataStore(
     internal val fileName: String
     internal val cipher: Cipher?
     internal val handlerScope: CoroutineScope
+    internal val ioScope: CoroutineScope
 
     //region reset delete exist
     @RequiresOptIn

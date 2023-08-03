@@ -33,7 +33,7 @@ public actual abstract class KDataStore actual constructor(
     internal actual val fileName: String,
     internal actual val cipher: Cipher?,
     internal actual val handlerScope: CoroutineScope,
-    ioScope: CoroutineScope,
+    internal actual val ioScope: CoroutineScope,
 ) {
     internal val kdsFlows: MutableList<KDSFlow<*>> = mutableListOf()
 
@@ -47,6 +47,10 @@ public actual abstract class KDataStore actual constructor(
                 "which may be indirect, with startup-runtime."
             )
         }
+    }
+
+    internal fun getCorruptionTagFile(): File{
+        return File(KDataStoreInitializer.context.filesDir, "datastore/$fileName.corruptionTag")
     }
 
     //region getFile, getBackupFile
@@ -95,22 +99,26 @@ public actual abstract class KDataStore actual constructor(
     // ignores the IOException because reads only once.
     internal val initialPrefs: Preferences =
         runBlocking {
-            val (frontPrefs, backupPrefs) =
-                listOf(frontStore, backupStore)
-                    .map {
-                        try {
-                            it.data.first()
-                        } catch (e: IOException) {
-                            emptyPreferences()
-                        }
-                        .toMutablePreferences()
-                    }
+            val frontPrefs =
+                try {
+                    frontStore.data.first()
+                }catch (e: IOException){
+                    null
+                }
+                ?.toMutablePreferences()
 
-            // if frontStore corrupted or is empty
-            if (frontPrefs.asMap().none()) {
-                backupPrefs -= ioExceptionRecordsKey
-                return@runBlocking backupPrefs
-            }
+            if (frontPrefs != null && !getCorruptionTagFile().exists())
+                return@runBlocking frontPrefs
+
+            val backupPrefs =
+                try {
+                    backupStore.data.first()
+                }catch (e: IOException){
+                    return@runBlocking frontPrefs ?: emptyPreferences()
+                }
+                .toMutablePreferences()
+
+            frontPrefs ?: return@runBlocking backupPrefs
 
             backupPrefs[ioExceptionRecordsKey]
                 ?.map(::stringPreferencesKey)
@@ -130,6 +138,10 @@ public actual abstract class KDataStore actual constructor(
 
             frontPrefs
         }
+
+    init {
+        getCorruptionTagFile().delete()
+    }
 
     // update disk asyncly
     internal val initialCorrectingJob =
