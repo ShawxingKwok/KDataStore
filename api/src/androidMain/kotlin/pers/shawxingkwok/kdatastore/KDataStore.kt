@@ -133,7 +133,7 @@ public actual abstract class KDataStore actual constructor(
             frontPrefs
         }
 
-    // update disk asyncly
+    // update disk asyncly if needed
     internal val initialCorrectingJob =
         if (hasIOExceptionBefore)
             handlerScope.launch {
