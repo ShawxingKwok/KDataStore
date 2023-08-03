@@ -115,7 +115,6 @@ public actual abstract class KDataStore actual constructor(
                 }catch (e: IOException){
                     return@runBlocking frontPrefs ?: emptyPreferences()
                 }
-                .toMutablePreferences()
 
             frontPrefs ?: return@runBlocking backupPrefs
 
