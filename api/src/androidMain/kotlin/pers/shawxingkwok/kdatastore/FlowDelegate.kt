@@ -3,19 +3,12 @@ package pers.shawxingkwok.kdatastore
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.asLiveData
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.serialization.builtins.ByteArraySerializer
-import kotlinx.serialization.json.Json
-import pers.shawxingkwok.androidutil.KLog
 import pers.shawxingkwok.kdatastore.hidden.MLog
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
-import java.io.File
 import java.io.IOException
 import kotlin.reflect.KProperty
 
@@ -75,7 +68,7 @@ internal fun <T> KDSFlowDelegate(
             }
 
             thisRef.handlerScope.launch {
-                thisRef.initialCorrectingJob.join()
+                thisRef.initialCorrectingJob?.join()
 
                 flow
                     // not writes to the disk when value is the initial
@@ -98,7 +91,7 @@ internal fun <T> KDSFlowDelegate(
                             corrupted = true
 
                             thisRef.ioScope.launch {
-                                thisRef.getCorruptionTagFile().createNewFile()
+                                thisRef.getIOExceptionTagFile().createNewFile()
                             }
                         }
 

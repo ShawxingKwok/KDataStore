@@ -1,25 +1,18 @@
 package pers.shawxingkwok.kdatastore
 
-import android.annotation.SuppressLint
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStoreFile
-import androidx.startup.Initializer
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import pers.shawxingkwok.androidutil.KLog
 import pers.shawxingkwok.kdatastore.hidden.MLog
 import pers.shawxingkwok.ktutil.KReadOnlyProperty
 import pers.shawxingkwok.ktutil.allDo
 import java.io.File
 import java.io.IOException
-import kotlin.system.measureTimeMillis
-import kotlin.time.ExperimentalTime
-import kotlin.time.measureTime
 
 /**
  * An extended data store with little configuration, easy crypto, exception safety
@@ -49,7 +42,7 @@ public actual abstract class KDataStore actual constructor(
         }
     }
 
-    internal fun getCorruptionTagFile(): File{
+    internal fun getIOExceptionTagFile(): File{
         return File(KDataStoreInitializer.context.filesDir, "datastore/$fileName.corruptionTag")
     }
 
@@ -62,6 +55,8 @@ public actual abstract class KDataStore actual constructor(
         return KDataStoreInitializer.context.preferencesDataStoreFile("$fileName.bak")
     }
     //endregion
+
+    private val hasIOExceptionBefore = getIOExceptionTagFile().exists()
 
     //region frontStore, backupStore
     internal val frontStore: DataStore<Preferences> =
@@ -106,10 +101,10 @@ public actual abstract class KDataStore actual constructor(
                     null
                 }
 
-            if (frontPrefs != null && !getCorruptionTagFile().exists())
+            if (frontPrefs != null && !hasIOExceptionBefore)
                 return@runBlocking frontPrefs
 
-            MLog.d("Invoke the backup file because of corruption.")
+            MLog.d("Invoke the backup file because there was IOException.")
             val backupPrefs =
                 try {
                     backupStore.data.first()
@@ -138,16 +133,18 @@ public actual abstract class KDataStore actual constructor(
             frontPrefs
         }
 
-    init {
-        getCorruptionTagFile().delete()
-    }
-
     // update disk asyncly
     internal val initialCorrectingJob =
-        handlerScope.launch {
-            frontStore.updateData { initialPrefs }
-            backupStore.updateData { initialPrefs }
-        }
+        if (hasIOExceptionBefore)
+            handlerScope.launch {
+                frontStore.updateData { initialPrefs }
+                backupStore.updateData { initialPrefs }
+                ioScope.launch {
+                    getIOExceptionTagFile().delete()
+                }
+            }
+        else
+            null
 
     // remove needless keys later
     init {
