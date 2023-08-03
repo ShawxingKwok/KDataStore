@@ -101,11 +101,10 @@ public actual abstract class KDataStore actual constructor(
         runBlocking {
             val frontPrefs =
                 try {
-                    frontStore.data.first()
+                    frontStore.data.first().toMutablePreferences()
                 }catch (e: IOException){
                     null
                 }
-                ?.toMutablePreferences()
 
             if (frontPrefs != null && !getCorruptionTagFile().exists())
                 return@runBlocking frontPrefs
