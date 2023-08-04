@@ -121,6 +121,10 @@ internal fun <T> KDSFlowDelegate(
                                     obj = "Encountered IOException when writing $qualifiedPropName to datastore and its backup.",
                                     tr = e,
                                 )
+
+                            thisRef.ioScope.launch {
+                                thisRef.getIOExceptionTagFile().createNewFile()
+                            }
                         }
                     }
             }
