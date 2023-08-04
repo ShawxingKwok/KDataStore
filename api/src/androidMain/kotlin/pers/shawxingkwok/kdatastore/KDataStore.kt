@@ -35,8 +35,7 @@ public actual abstract class KDataStore actual constructor(
             KDataStoreInitializer.context
         }catch (e: NullPointerException){
             throw NullPointerException(
-                "${KDataStoreInitializer::class.java.canonicalName}.context is not initialized. " +
-                "Include KDataStoreInitializer::class.java in dependencies in that caller module, " +
+                "${e.message}. Include KDataStoreInitializer::class.java in dependencies in that caller module, " +
                 "which may be indirect, with startup-runtime."
             )
         }
@@ -142,8 +141,12 @@ public actual abstract class KDataStore actual constructor(
             return@runBlocking when{
                 frontPrefs == null && backupPrefs == null ->
                     error("Unexpected IOExceptions for both datastore $fileName and its backup.")
+
+                // If there is writing IOException record and just encountered reading IOException,
+                // lay the IOException records aside, which rarely occurs.
                 frontPrefs == null -> backupPrefs!!
                 backupPrefs == null -> frontPrefs
+
                 else -> {
                     backupPrefs[ioExceptionRecordsKey]
                         ?.map(::stringPreferencesKey)

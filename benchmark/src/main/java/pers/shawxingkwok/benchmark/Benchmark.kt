@@ -21,7 +21,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
 @OptIn(ExperimentalTime::class)
-internal class Benchmark(context: Context) {
+internal class Benchmark(private val context: Context) {
     private val sp by lazyFast { context.getSharedPreferences("sp", Context.MODE_PRIVATE) }
     private val kv by lazyFast {
         MMKV.initialize(context)
@@ -37,7 +37,7 @@ internal class Benchmark(context: Context) {
     }
 
     private fun putInitialData(){
-        KDS::class.declaredMemberProperties
+        KDS::class.declaredMemberProperties.take(30)
         .forEach { prop ->
             @Suppress("UNCHECKED_CAST")
             prop as KProperty1<KDS, KDSFlow<String>>
@@ -117,7 +117,7 @@ internal class Benchmark(context: Context) {
     }
 
     init {
-        if (context.preferencesDataStoreFile("benchmark").readBytes().none()){
+        if (!context.preferencesDataStoreFile("benchmark").exists()){
             clear()
             putInitialData()
             KLog.w("Put ${sp.all.size} sets of data fist. Invoke again to test the benchmark.")

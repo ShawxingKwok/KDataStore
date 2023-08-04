@@ -81,7 +81,11 @@ internal fun <T> KDSFlowDelegate(
                         var corrupted = false
 
                         // default is null when nullable
-                        val converted = if (value == default) null else convert(value!!)
+                        val converted =
+                            if (value == default)
+                                null
+                            else
+                                convert(value!!)
 
                         try {
                             thisRef.frontStore.edit { save(it, converted) }
