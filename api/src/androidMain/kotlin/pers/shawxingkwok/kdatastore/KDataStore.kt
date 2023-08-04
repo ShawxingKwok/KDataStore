@@ -58,12 +58,15 @@ public actual abstract class KDataStore actual constructor(
 
     private val hasIOExceptionBefore = getIOExceptionTagFile().exists()
 
+    private var corrupted = false
+
     //region frontStore, backupStore
     internal val frontStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler {
-                MLog.i("DataStore $fileName corrupted.")
-                emptyPreferences()
+                corrupted = true
+                MLog.d("Front dataStore $fileName corrupted.")
+                runBlocking { backupStore.data.first() }
             },
             migrations = emptyList(),
             scope = ioScope,
@@ -73,8 +76,11 @@ public actual abstract class KDataStore actual constructor(
     internal val backupStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler {
-                MLog.i("Backup dataStore $fileName.bak corrupted.")
-                emptyPreferences()
+                MLog.d("Backup dataStore $fileName corrupted.")
+                if (corrupted)
+                    emptyPreferences()
+                else
+                    runBlocking { frontStore.data.first() }
             },
             migrations = emptyList(),
             scope = ioScope,
@@ -88,7 +94,9 @@ public actual abstract class KDataStore actual constructor(
     // only saved in backup store, because if you write again at once when IOException occurs, IOException
     // would probably occur again.
     internal val ioExceptionRecordsKey: Preferences.Key<Set<String>> =
-        stringSetPreferencesKey("ioExceptionRecords").also { keys += it }
+        stringSetPreferencesKey("ioExceptionRecords")
+
+    internal var initialCorrectingJob: Job? = null
 
     // recovers with ioException records
     // ignores the IOException because reads only once.
@@ -98,72 +106,74 @@ public actual abstract class KDataStore actual constructor(
                 try {
                     frontStore.data.first().toMutablePreferences()
                 }catch (e: IOException){
+                    MLog.e("Datastore $fileName encountered IOException.")
                     null
                 }
 
-            if (frontPrefs != null && !hasIOExceptionBefore)
-                return@runBlocking frontPrefs
+            if (frontPrefs != null && !hasIOExceptionBefore) {
+                // remove needless keys later if any
+                handlerScope.launch {
+                    delay(1000)
 
-            MLog.d("Invoke the backup file because there was IOException.")
+                    val needlessKeys = frontPrefs.asMap().keys - keys
+                    if (needlessKeys.none()) return@launch
+
+                    // Here is rarely invoked. IOException is thrown out.
+                    allDo(frontStore, backupStore) { store ->
+                        store.edit { prefs ->
+                            needlessKeys.forEach { prefs -= it }
+                        }
+                    }
+                }
+                return@runBlocking frontPrefs
+            }
+
+            // Handles IOException
+            MLog.d("Start to handle IOException.")
 
             val backupPrefs =
                 try {
                     backupStore.data.first()
                 }catch (e: IOException){
-                    return@runBlocking frontPrefs ?: emptyPreferences()
+                    MLog.e("Backup datastore $fileName encountered IOException.")
+                    null
                 }
 
-            frontPrefs ?: return@runBlocking backupPrefs
+            return@runBlocking when{
+                frontPrefs == null && backupPrefs == null ->
+                    error("Unexpected IOExceptions for both datastore $fileName and its backup.")
+                frontPrefs == null -> backupPrefs!!
+                backupPrefs == null -> frontPrefs
+                else -> {
+                    backupPrefs[ioExceptionRecordsKey]
+                        ?.map(::stringPreferencesKey)
+                        ?.forEach { key ->
+                            val value = backupPrefs[key]
 
-            backupPrefs[ioExceptionRecordsKey]
-                ?.map(::stringPreferencesKey)
-                ?.forEach { key ->
-                    val value = backupPrefs[key]
+                            when(value) {
+                                null -> frontPrefs -= key
+                                else -> frontPrefs[key] = value
+                            }
 
-                    when(value) {
-                        null -> frontPrefs -= key
-                        else -> frontPrefs[key] = value
+                            MLog.d("Update ${key.name.decryptIfNeeded(cipher)} " +
+                                    "with ${value?.decryptIfNeeded(cipher) ?: "default"} " +
+                                    "from the backup datastore."
+                            )
+                        }
+
+                    // Here is rarely invoked. IOException is thrown out.
+                    initialCorrectingJob = handlerScope.launch {
+                        frontStore.updateData { frontPrefs }
+                        backupStore.updateData { frontPrefs }
+                        ioScope.launch {
+                            getIOExceptionTagFile().delete()
+                        }
                     }
 
-                    MLog.d("Update ${key.name.decryptIfNeeded(cipher)} " +
-                            "with ${value?.decryptIfNeeded(cipher) ?: "default"} " +
-                            "from the backup datastore."
-                    )
-                }
-
-            frontPrefs
-        }
-
-    // update disk asyncly if needed
-    internal val initialCorrectingJob =
-        if (hasIOExceptionBefore)
-            handlerScope.launch {
-                frontStore.updateData { initialPrefs }
-                backupStore.updateData { initialPrefs }
-                ioScope.launch {
-                    getIOExceptionTagFile().delete()
-                }
-            }
-        else
-            null
-
-    // remove needless keys later
-    init {
-        handlerScope.launch {
-            delay(1000)
-
-            val needlessKeys = initialPrefs.asMap().keys - keys
-            if (needlessKeys.none()) return@launch
-
-            allDo(frontStore, backupStore) { store ->
-                store.edit { prefs ->
-                    needlessKeys.forEach { key ->
-                        prefs -= key
-                    }
+                    frontPrefs
                 }
             }
         }
-    }
     //endregion
 
     //region reset delete exist
