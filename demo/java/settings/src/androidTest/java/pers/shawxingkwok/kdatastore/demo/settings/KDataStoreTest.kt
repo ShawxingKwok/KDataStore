@@ -6,10 +6,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
-import pers.shawxingkwok.androidutil.AppContext
 import pers.shawxingkwok.androidutil.KLog
 import pers.shawxingkwok.kdatastore.KDataStore
-import java.io.File
 import java.nio.charset.StandardCharsets
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec

@@ -1,5 +1,6 @@
 package pers.shawxingkwok.kdatastore
 
+import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.*
@@ -30,7 +31,7 @@ public actual abstract class KDataStore actual constructor(
 ) {
     internal val kdsFlows: MutableList<KDSFlow<*>> = mutableListOf()
 
-    init {
+    protected val appContext: Context =
         try {
             KDataStoreInitializer.context
         }catch (e: NullPointerException){
@@ -39,7 +40,6 @@ public actual abstract class KDataStore actual constructor(
                 "which may be indirect, with startup-runtime."
             )
         }
-    }
 
     internal fun getIOExceptionTagFile(): File{
         return File(KDataStoreInitializer.context.filesDir, "datastore/$fileName.corruptionTag")

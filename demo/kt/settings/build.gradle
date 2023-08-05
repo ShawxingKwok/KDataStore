@@ -43,6 +43,5 @@ dependencies {
     implementation libs.kt.coroutines.core
     implementation libs.kt.serialization.json
     implementation libs.shawxingkwok.kt.util
-    implementation libs.shawxingkwok.android.util.core
     implementation project(":api") // "io.github.shawxingkwok:kdatastore:1.0.0"
 }
