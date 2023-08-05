@@ -21,7 +21,7 @@ object Settings : KDataStore("settings") {
     @JvmStatic
     val users by store(emptyList<User>())
 
-    // default is limited to null.
+    // default in `storeNullable` is limited to null.
     @JvmStatic
     val user by storeNullable<User>()
 
