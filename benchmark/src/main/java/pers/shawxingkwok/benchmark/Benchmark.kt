@@ -13,24 +13,20 @@ import kotlinx.coroutines.flow.onEach
 import pers.shawxingkwok.androidutil.KLog
 import pers.shawxingkwok.kdatastore.KDSFlow
 import pers.shawxingkwok.kdatastore.KDataStore
-import pers.shawxingkwok.ktutil.lazyFast
-import java.io.File
+import pers.shawxingkwok.ktutil.fastLazy
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
-@OptIn(ExperimentalTime::class)
 internal class Benchmark(private val context: Context) {
-    private val sp by lazyFast { context.getSharedPreferences("sp", Context.MODE_PRIVATE) }
-    private val kv by lazyFast {
-        MMKV.initialize(context)
-        MMKV.defaultMMKV()
-    }
+    private val sp by fastLazy { context.getSharedPreferences("sp", Context.MODE_PRIVATE) }
+    private val kv by fastLazy { MMKV.defaultMMKV() }
     private val Context.dataStore by preferencesDataStore("ds")
-    private val ds by lazyFast { context.dataStore }
-    private val kds by lazyFast { KDS }
+    private val ds by fastLazy { context.dataStore }
+    private val kds by fastLazy { KDS }
 
+    @OptIn(ExperimentalTime::class)
     private inline fun myMeasureTime(block: () -> Unit): String{
         val time = measureTime(block).inWholeMicroseconds / 1000.0
         return String.format("%.1f", time) + "ms"
