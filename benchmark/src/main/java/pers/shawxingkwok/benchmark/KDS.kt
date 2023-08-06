@@ -30,7 +30,7 @@ private val cipher = run {
     }
 }
 
-object KDS: KDataStore("benchmark", null) {
+object KDS: KDataStore("benchmark", cipher) {
     val s1 by store("")
     val s2 by store("")
     val s3 by store("")

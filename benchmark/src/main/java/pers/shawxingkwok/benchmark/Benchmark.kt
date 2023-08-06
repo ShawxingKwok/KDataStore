@@ -21,7 +21,10 @@ import kotlin.time.measureTime
 
 internal class Benchmark(private val context: Context) {
     private val sp by fastLazy { context.getSharedPreferences("sp", Context.MODE_PRIVATE) }
-    private val kv by fastLazy { MMKV.defaultMMKV() }
+    private val kv by fastLazy {
+        MMKV.initialize(context)
+        MMKV.defaultMMKV()
+    }
     private val Context.dataStore by preferencesDataStore("ds")
     private val ds by fastLazy { context.dataStore }
     private val kds by fastLazy { KDS }
