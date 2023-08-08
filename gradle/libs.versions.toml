@@ -24,9 +24,9 @@ kt-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.
 kt-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.5.1" }
 kt-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1" }
 
-shawxingkwok-kt-util = { group = "io.github.shawxingkwok", name = "kt-util", version = "1.0.0-SNAPSHOT"}
-shawxingkwok-android-util-core = { group = "io.github.shawxingkwok", name = "android-util-core", version = "1.0.0-SNAPSHOT" }
-shawxingkwok-android-util-view = { group = "io.github.shawxingkwok", name = "android-util-view", version = "1.0.0-SNAPSHOT"}
+shawxingkwok-kt-util = { group = "io.github.shawxingkwok", name = "kt-util", version = "1.0.0"}
+shawxingkwok-android-util-core = { group = "io.github.shawxingkwok", name = "android-util-core", version = "1.0.0" }
+shawxingkwok-android-util-view = { group = "io.github.shawxingkwok", name = "android-util-view", version = "1.0.0"}
 
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.10.1" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.6.1" }

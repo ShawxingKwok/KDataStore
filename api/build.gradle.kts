@@ -80,7 +80,7 @@ android {
 
 // publish
 mavenPublishing {
-    val isSNAPSHOT = true
+    val isSNAPSHOT = false
     val version = "1.0.0"
     val artifactId = "kdatastore"
 
